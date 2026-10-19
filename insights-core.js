@@ -50,12 +50,76 @@
   /* ---------------- costs ---------------- */
   function lines(o) { return Array.isArray(o && o.line_items) ? o.line_items : []; }
   function costRecorded(o) { return !blank(o && o.cost); }
+  /* ---- piece costing: "per unit" or "total / batch" ----
+   * A line keeps   cost       = cost of ONE unit (full precision, never rounded)
+   *                cost_mode  = 'unit' (default, also for older lines) or 'total'
+   *                cost_total = the exact total entered, in rupees to the paisa (total mode only)
+   * The cost of a line is the entered total in total mode; in unit mode it is qty × unit cost,
+   * multiplied BEFORE rounding to paisa, so 3 × (10 ÷ 3) is Rs 10.00 and never Rs 9.99.
+   * Blank means "not entered" and is never treated as 0. */
+  function round2(v) { return Math.round(+(+v * 100).toFixed(4)) / 100; }
+  function lineQty(l) { var q = +(l && l.qty); return isFinite(q) ? q : 0; }
+  function lineMode(l) { return l && l.cost_mode === 'total' ? 'total' : 'unit'; }
+  function lineCostP(l) {
+    if (!l) return null;
+    if (lineMode(l) === 'total') return blank(l.cost_total) ? null : toP(l.cost_total);
+    if (blank(l.cost)) return null;
+    return Math.round(+(lineQty(l) * +l.cost * 100).toFixed(4));
+  }
+  function lineCost(l) { var p = lineCostP(l); return p == null ? null : fromP(p); }
+  function lineUnitCost(l) {
+    if (lineMode(l) === 'total') { var q = lineQty(l); return blank(l.cost_total) || !(q > 0) ? null : +l.cost_total / q; }
+    return blank(l.cost) ? null : +l.cost;
+  }
+  function lineSaleP(l) { return Math.round(lineQty(l) * toP(l.price)); }
+  /* State changes used by the order form. Each returns a NEW line object. */
+  var costing = {
+    /* Quantity changed: keep the unit cost; in total mode the total is worked out again from it. */
+    setQty: function (l, q) {
+      var n = Object.assign({}, l, { qty: q }), u = blank(l.cost) ? null : +l.cost;
+      if (lineMode(l) === 'total' && u != null && +q > 0) { n.cost_total = round2(+q * u); n._recalc = true; }
+      return n;
+    },
+    /* Unit cost typed (per-unit mode). */
+    setUnit: function (l, v) { var n = Object.assign({}, l, { cost_mode: 'unit', cost: blank(v) ? null : +v }); delete n.cost_total; delete n._recalc; return n; },
+    /* Total cost typed (total mode): the unit cost is worked out from the current quantity. */
+    setTotal: function (l, v) {
+      var n = Object.assign({}, l, { cost_mode: 'total' }); delete n._recalc;
+      if (blank(v)) { n.cost_total = null; n.cost = null; return n; }
+      n.cost_total = round2(v); var q = lineQty(l);
+      n.cost = q > 0 ? n.cost_total / q : (blank(l.cost) ? null : +l.cost);
+      return n;
+    },
+    /* Switching method never changes what the line costs. */
+    setMode: function (l, m) {
+      var n = Object.assign({}, l); delete n._recalc;
+      if (m === lineMode(l)) return n;
+      if (m === 'total') { n.cost_mode = 'total'; n.cost_total = lineCost(l); }
+      else { n.cost_mode = 'unit'; n.cost = lineUnitCost(l); delete n.cost_total; }
+      return n;
+    },
+    /* Problems that must stop a save. */
+    error: function (l) {
+      var q = +(l && l.qty);
+      if (!(q > 0)) return 'Enter a quantity of at least 1';
+      if (!blank(l.cost) && +l.cost < 0) return "Cost can't be negative";
+      if (!blank(l.cost_total) && +l.cost_total < 0) return "Cost can't be negative";
+      if (!blank(l.price) && +l.price < 0) return "Price can't be negative";
+      return null;
+    },
+    /* A saved product's usual unit cost (from its batch if one was entered). */
+    productUnitCost: function (p) {
+      if (!p) return null;
+      if (!blank(p.cost_batch_total) && +p.cost_batch_qty > 0) return +p.cost_batch_total / +p.cost_batch_qty;
+      return blank(p.cost) ? null : +p.cost;
+    }
+  };
   /* Totals for a list of pieces: cost is null unless every piece has a cost. */
   function linesSummary(ls) {
     var saleP = 0, costP = 0, qty = 0, known = 0, missing = 0;
     (ls || []).forEach(function (l) {
-      var q = +l.qty || 0; qty += q; saleP += Math.round(q * toP(l.price));
-      if (blank(l.cost)) missing++; else { known++; costP += Math.round(q * toP(l.cost)); }
+      var q = lineQty(l); qty += q; saleP += lineSaleP(l);
+      var c = lineCostP(l); if (c == null) missing++; else { known++; costP += c; }
     });
     return { sale: fromP(saleP), cost: missing === 0 && known > 0 ? fromP(costP) : null, knownCost: fromP(costP),
       qty: qty, costedLines: known, missingLines: missing, anyCost: known > 0 };
@@ -313,7 +377,7 @@
         var p = prod[key] || (prod[key] = { key: key, productId: l.product_id || null, name: name, custom: !l.product_id, qty: 0, salesP: 0, costP: 0, costMissingLines: 0, orders: {} });
         var q = +l.qty || 0;
         p.qty += q; p.salesP += Math.round(q * toP(l.price)); p.orders[o.id] = 1;
-        if (blank(l.cost)) p.costMissingLines++; else p.costP += Math.round(q * toP(l.cost));
+        var lc = lineCostP(l); if (lc == null) p.costMissingLines++; else p.costP += lc;
         p.name = name;
       });
     });
@@ -372,6 +436,7 @@
 
   return { compute: compute, aggregate: aggregate, periodFor: periodFor, orderDay: orderDay, deliveredDay: deliveredDay,
     customerKey: customerKey, phoneKey: phoneKey, costRecorded: costRecorded, linesSummary: linesSummary, blank: blank,
+    lineCost: lineCost, lineUnitCost: lineUnitCost, lineMode: lineMode, costing: costing, round2: round2,
     moneyOf: moneyOf, groupPayments: groupPayments, receivables: receivables, pnl: pnl, PAY_LABEL: PAY_LABEL,
     EXPENSE_KIND: EXPENSE_KIND, EXPENSE_LABEL: EXPENSE_LABEL,
     monthLabel: monthLabel, monthKey: monthKey, monthEnd: monthEnd, addDays: addDays, ymd: ymd, toP: toP, fromP: fromP, names: names };

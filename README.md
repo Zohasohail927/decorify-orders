@@ -87,3 +87,43 @@ Run `supabase-migration-3.sql` once in Supabase → SQL Editor **before** upload
 - **Expenses & P&L**: Insights shows delivered sales − direct costs = order profit − business expenses = operating profit. Stock purchases and owner drawings are listed separately.
 - **Safety**: only approved logins (table `app_users`) can see data; every change is written to `audit_log` by the database; two phones editing the same order get a "changed on another phone" choice instead of silently overwriting; drafts are kept on the phone until saved; signing out removes the phone's copy; the service worker never caches customer data.
 - **Tests**: `node tests/insights.test.js`, `node tests/finance.test.js` (run with `TZ=Asia/Karachi`); SQL access tests in `tests/sql/`; end-to-end results in `tests/e2e-results.txt`.
+
+## Version 6.1 (Modern Navy design)
+
+A front-end-only redesign. No database changes, no change to any calculation, sync or sign-in.
+
+- **Design system** (`build/navy.css`): semantic colour tokens for Light (Premium Navy) and Dark (Midnight Navy); Inter typeface self-hosted as `inter-var.woff2` (no Google Fonts request, works offline); one spacing, radius, shadow and motion scale; WCAG AA contrast for text and form-field borders.
+- **Phone**: navy header; Home, Orders, New order, Insights, More tab bar; More holds Clients, Products, Expenses, Settings and the theme choice. Respects iPhone safe areas.
+- **Dashboard**: navy performance card (order profit, sales, direct cost, margin, six-month bars), money owed / orders / in-the-studio cards, quick actions, a connected order pipeline, upcoming deliveries and needs-attention lists. Designed empty states when there are no orders.
+- **Desktop**: navy sidebar with grouped navigation, theme switch and sync status; drawer-style order sheets.
+- **Themes**: Light, Dark, System (follows the phone, remembered, applied before first paint). Build: `python3 build/assemble.py`.
+- **Tests**: `tests/qa-layout-theme.js` checks overflow at 390/430/768/1440 px in both themes, touch-target sizes, theme switching and persistence, keyboard shortcuts and reduced motion.
+
+## Version 6.2 (per-unit or total / batch costing)
+
+Each piece on an order, and each saved product, can take its cost in one of two ways:
+
+- **Per unit**: type the cost of one piece. The total is quantity × unit cost.
+- **Total / batch**: type what the whole quantity cost (e.g. 12 stickers for Rs 27, or the sheets for 10 cones for Rs 60). The unit cost is worked out (Rs 2.25, Rs 6).
+
+Rules (in `insights-core.js`, `DSInsights.costing`, tested in `tests/costing.test.js`):
+
+- When the quantity changes, the unit cost is kept and the total is worked out again ("Total cost updated using the previous unit cost"). Typing a new total then sets the unit cost.
+- Switching method never changes the cost. A batch total is kept exactly to the paisa; the unit cost is kept unrounded, so 3 for Rs 10 stays Rs 10.00 (never 9.99).
+- Blank means not entered (no profit is shown); 0 typed is a real zero. Negative costs and quantities below 1 can't be saved.
+- A product's usual cost fills in new order lines ("Estimated total cost"). Each order keeps its own cost, so changing a product never changes saved orders.
+- Storage: order lines are JSON on the order. Per-unit lines keep the original `{name, qty, price, cost}` shape; batch lines add `cost_mode: "total"` and the exact `cost_total`. No change is needed to the orders table.
+- Products: `supabase-migration-4.sql` (optional, additive) adds `cost_batch_qty` and `cost_batch_total` so a product's batch is remembered. Without it, a batch typed for a product is saved as its unit cost. Undo: `supabase-migration-4-rollback.sql`.
+
+## Version 6.3 (iPhone stability)
+
+Root causes found and fixed:
+
+- **Zooming in when a field is tapped**: iOS Safari zooms the page when an input's text is under 16px, and stays zoomed. The order-piece fields were 15px (15.5px in 6.2). Every input, dropdown and text box is now 16px or larger; `tests/audit.js` checks this.
+- **Page appearing zoomed out / sliding sideways**: on Products (and other lists with long names) a grid column could not shrink below the longest name, so the page became 413–418px wide on a 390px screen. All grid columns now use `minmax(0, …)`, and long unbroken text wraps.
+- **Double-tap zoom**: rapid taps (e.g. + / − quantity) triggered iOS double-tap zoom. `touch-action: manipulation` turns that off; pinch-zoom is untouched (no `user-scalable=no`, no `maximum-scale`).
+- **Landscape**: an iPhone on its side (956px wide) switched to the desktop sidebar layout. Layouts now depend on height too, so phones keep the phone layout with slimmer bars.
+
+Also: the bottom tab bar steps aside while the keyboard is up (no floating bar); sticky bars leave room for focused fields (`scroll-padding`); each screen keeps its scroll position and tapping the current tab returns to the top; safe-area insets on all sides (Dynamic Island in landscape); no stuck hover states after a tap; calm screen fade; `100vh` fallbacks for `dvh`; long order lists drawn 150 at a time; build fingerprint on the core script, the offline cache and the Settings version line, so old and new files are never mixed; no reloads forced under the user.
+
+Tests: `tests/mobile.js` (iPhone walk-through at 390/402/430/440 px, landscape, 150% and 200% zoom), `tests/audit.js`, plus all earlier suites. These run in Chromium with mobile emulation, not on a real iPhone.
