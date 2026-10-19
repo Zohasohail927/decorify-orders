@@ -1,17 +1,20 @@
-/* Decorify Orders: Insights calculation layer.
- * Pure functions, read-only. Used by the Insights page and by tests/insights.test.js.
+/* Decorify Orders: money and Insights calculation layer (v6).
+ * Pure functions, read-only. Used by the app (Home, Orders, Insights, Customers) and by the tests in tests/.
  *
- * REPORTING DEFINITIONS (match the existing Dashboard):
- *  - Eligible order: status is not "cancelled".
- *  - Grouped by ORDER DATE (order_date; if missing, the local date of created_at).
- *    The app stores no completion timestamp, so a "completed date" basis is not available.
- *  - Net sales = sale_price (the stored order total; there are no discount/refund fields).
- *  - Direct cost = cost (recorded against the order when it was saved; never recomputed from today's product prices).
- *  - A cost of 0 on an order with a sale price is treated as "cost not recorded", because the form saves a blank cost as 0.
- *  - Order profit = net sales - direct cost, before business expenses. Shown only for orders whose cost is recorded.
- *    Earned = delivered orders; expected = orders not yet delivered.
- *  - Payments (advance_paid) never change sales or profit; they are used only for current balances.
- *  - Customer = normalised phone number. Orders without a usable phone are "unidentified" and are not merged by name.
+ * DEFINITIONS
+ *  - Order total (net sales) = sale_price. A cancelled order's total counts as 0.
+ *  - Direct cost = cost recorded on the order (materials + the order's delivery cost, delivery_cost). A blank cost (null) means "not entered yet" and is never treated as 0.
+ *    0 means the cost was entered as zero. An order made of pieces has a cost only when EVERY piece has one.
+ *  - Order profit = net sales - direct cost, before business expenses. Shown only when all costs in the group are entered;
+ *    otherwise the figure for the orders that do have costs is shown separately, with its own count.
+ *  - Reporting basis:
+ *      booked    = orders not cancelled, grouped by order date (order_date; else local date of created_at).
+ *      delivered = delivered orders, grouped by the actual delivery date (delivered_on). Orders without one are left out and counted.
+ *  - Payments come from the payments ledger (voided entries ignored). Received = payments - refunds.
+ *    Balance = order total - received. Negative balance = customer credit. Delivery never marks an order paid.
+ *  - Customer = the linked customer record; for orders without one, the normalised phone number. Never merged by name.
+ *  - Management P&L = delivered sales - matched direct costs = order profit - recorded operating expenses.
+ *    Stock purchases and owner drawings are listed separately and are not expenses.
  * All money is summed in paisa (integers) to avoid floating-point drift.
  */
 (function (root, factory) {
@@ -23,6 +26,7 @@
 
   function toP(v) { var n = +v; return isFinite(n) ? Math.round(n * 100) : 0; }      // rupees -> paisa
   function fromP(p) { return p / 100; }                                                // paisa -> rupees
+  function blank(v) { return v === null || v === undefined || v === '' || (typeof v === 'number' && !isFinite(v)); }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
   function ymd(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
   function parseDay(s) { var a = String(s).split('-'); return new Date(+a[0], +a[1] - 1, +a[2]); }
@@ -33,22 +37,57 @@
   function addMonths(key, n) { var a = key.split('-'); var d = new Date(+a[0], +a[1] - 1 + n, 1); return d.getFullYear() + '-' + pad(d.getMonth() + 1); }
   function monthLabel(key) { var a = key.split('-'); return MONTHS[+a[1] - 1] + ' ' + a[0]; }
   function monthShort(key) { var a = key.split('-'); return MONTHS[+a[1] - 1].slice(0, 3) + ' ' + a[0].slice(2); }
+  function isDay(s) { return /^\d{4}-\d{2}-\d{2}$/.test(String(s || '').slice(0, 10)); }
 
+  /* ---------------- dates ---------------- */
   function orderDay(o) {
-    if (o && o.order_date) { var s = String(o.order_date).slice(0, 10); if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s; }
+    if (o && o.order_date && isDay(o.order_date)) return String(o.order_date).slice(0, 10);
     if (o && o.created_at) { var d = new Date(o.created_at); if (!isNaN(d)) return ymd(d); }
     return null;
   }
-  function isEligible(o) { return !!o && o.status !== 'cancelled' && !!orderDay(o); }
-  function costRecorded(o) { return toP(o.cost) !== 0 || toP(o.sale_price) === 0; }
-  function customerKey(o) {
-    var d = String((o && o.phone) || '').replace(/\D/g, '');
+  function deliveredDay(o) { return o && o.status === 'delivered' && isDay(o.delivered_on) ? String(o.delivered_on).slice(0, 10) : null; }
+
+  /* ---------------- costs ---------------- */
+  function lines(o) { return Array.isArray(o && o.line_items) ? o.line_items : []; }
+  function costRecorded(o) { return !blank(o && o.cost); }
+  /* Totals for a list of pieces: cost is null unless every piece has a cost. */
+  function linesSummary(ls) {
+    var saleP = 0, costP = 0, qty = 0, known = 0, missing = 0;
+    (ls || []).forEach(function (l) {
+      var q = +l.qty || 0; qty += q; saleP += Math.round(q * toP(l.price));
+      if (blank(l.cost)) missing++; else { known++; costP += Math.round(q * toP(l.cost)); }
+    });
+    return { sale: fromP(saleP), cost: missing === 0 && known > 0 ? fromP(costP) : null, knownCost: fromP(costP),
+      qty: qty, costedLines: known, missingLines: missing, anyCost: known > 0 };
+  }
+
+  /* ---------------- payments ---------------- */
+  function livePayments(pays) { return (pays || []).filter(function (p) { return p && !p.voided_at; }); }
+  function groupPayments(pays) {
+    var m = {}; livePayments(pays).forEach(function (p) { (m[p.order_id] || (m[p.order_id] = [])).push(p); }); return m;
+  }
+  /* Money position of one order. pays = that order's payments (voided ones are ignored). */
+  function moneyOf(o, pays) {
+    var totalP = o && o.status !== 'cancelled' ? toP(o.sale_price) : 0, inP = 0, outP = 0;
+    livePayments(pays).forEach(function (p) { if (p.kind === 'refund') outP += toP(p.amount); else inP += toP(p.amount); });
+    var netP = inP - outP, balP = totalP - netP;
+    var status = balP < 0 ? 'credit' : balP === 0 ? (totalP === 0 && netP === 0 ? 'none' : 'paid') : netP > 0 ? 'partly' : 'unpaid';
+    return { total: fromP(totalP), received: fromP(inP), refunded: fromP(outP), net: fromP(netP), balance: fromP(balP), status: status };
+  }
+  var PAY_LABEL = { unpaid: 'Unpaid', partly: 'Partly paid', paid: 'Paid', credit: 'Customer credit', none: 'No charge' };
+
+  /* ---------------- customers ---------------- */
+  function phoneKey(phone) {
+    var d = String(phone || '').replace(/\D/g, '');
     if (d.length < 7) return null;
     if (d.indexOf('0092') === 0) d = d.slice(2);
     if (d.length === 11 && d[0] === '0') d = '92' + d.slice(1);
-    return 'tel:' + d;
+    return d;
   }
-  function lines(o) { return Array.isArray(o && o.line_items) ? o.line_items : []; }
+  function customerKey(o) {
+    if (o && o.customer_id) return 'cid:' + o.customer_id;
+    var k = phoneKey(o && o.phone); return k ? 'tel:' + k : null;
+  }
 
   /* ---------------- periods ---------------- */
   function periodFor(key, today, opts) {
@@ -78,7 +117,7 @@
       units: 0, negativeN: 0, cust: {}, unidentifiedN: 0 };
   }
   function addOrder(a, o) {
-    var s = toP(o.sale_price), c = toP(o.cost), known = costRecorded(o), delivered = o.status === 'delivered';
+    var s = toP(o.sale_price), known = costRecorded(o), c = known ? toP(o.cost) : 0, delivered = o.status === 'delivered';
     a.n++; a.salesP += s; a.costP += c; a.units += Math.max(0, +o.quantity || 0);
     if (known) { a.completeN++; a.completeSalesP += s; a.completeCostP += c; if (s - c < 0) a.negativeN++; }
     else { a.missingCostN++; a.missingSalesP += s; }
@@ -127,25 +166,77 @@
     return arr.filter(function (x) { return pick(x) === v; });
   }
 
+  /* ---------------- money owed (as of today, all orders) ---------------- */
+  function receivables(allOrders, payments) {
+    var g = groupPayments(payments), owedP = 0, owedN = 0, owedDeliveredP = 0, owedDeliveredN = 0, creditP = 0, creditN = 0, byCust = {};
+    (allOrders || []).forEach(function (o) {
+      if (!o || o.deleted_at) return;
+      var m = moneyOf(o, g[o.id]), b = toP(m.balance), k = customerKey(o) || ('order:' + o.id);
+      if (b > 0) { owedP += b; owedN++; if (o.status === 'delivered') { owedDeliveredP += b; owedDeliveredN++; } }
+      if (b < 0) { creditP += -b; creditN++; }
+      if (b !== 0) { var c = byCust[k] || (byCust[k] = { key: k, name: o.customer_name || '', phone: o.phone || '', customerId: o.customer_id || null, balanceP: 0, orders: 0, last: '' });
+        c.balanceP += b; c.orders++; var d = orderDay(o) || ''; if (d >= c.last) { c.last = d; c.name = o.customer_name || c.name; c.phone = o.phone || c.phone; } }
+    });
+    var list = Object.keys(byCust).map(function (k) { var c = byCust[k]; return { key: k, name: c.name, phone: c.phone, customerId: c.customerId, balance: fromP(c.balanceP), orders: c.orders }; });
+    return { owed: fromP(owedP), owedOrders: owedN, owedDelivered: fromP(owedDeliveredP), owedDeliveredOrders: owedDeliveredN,
+      credit: fromP(creditP), creditOrders: creditN,
+      owing: list.filter(function (c) { return c.balance > 0; }).sort(function (a, b) { return b.balance - a.balance || a.name.localeCompare(b.name); }),
+      credits: list.filter(function (c) { return c.balance < 0; }).sort(function (a, b) { return a.balance - b.balance; }) };
+  }
+
+  /* ---------------- management P&L for a period (delivery-date basis) ---------------- */
+  var EXPENSE_KIND = { packaging: 'operating', delivery: 'operating', marketing: 'operating', utilities: 'operating', equipment: 'operating',
+    admin: 'operating', other: 'operating', stock: 'stock', drawings: 'drawings' };
+  var EXPENSE_LABEL = { packaging: 'Packaging supplies', delivery: 'Delivery & courier', marketing: 'Marketing & ads', utilities: 'Utilities',
+    equipment: 'Tools & equipment', admin: 'Admin & other costs', other: 'Other business expenses', stock: 'Stock / materials bought', drawings: 'Owner drawings' };
+  function pnl(allOrders, expenses, from, to) {
+    var delivered = [], undated = 0;
+    (allOrders || []).forEach(function (o) {
+      if (!o || o.deleted_at || o.status !== 'delivered') return;
+      var d = deliveredDay(o); if (!d) { undated++; return; }
+      if (d >= from && d <= to) delivered.push(o);
+    });
+    var agg = aggregate(delivered), cats = {}, opP = 0, stockP = 0, drawP = 0, count = 0;
+    var deliveryP = delivered.reduce(function (s, o) { return s + toP(o.delivery_cost); }, 0);
+    (expenses || []).forEach(function (e) {
+      if (!e || e.voided_at || !isDay(e.spent_on)) return; var d = String(e.spent_on).slice(0, 10); if (d < from || d > to) return;
+      var a = toP(e.amount), kind = EXPENSE_KIND[e.category] || 'operating'; count++;
+      if (kind === 'stock') stockP += a; else if (kind === 'drawings') drawP += a; else { opP += a; cats[e.category] = (cats[e.category] || 0) + a; }
+    });
+    var orderProfit = agg.profit;
+    return {
+      from: from, to: to, deliveredOrders: agg.orders, sales: agg.sales,
+      directCost: agg.cost, directCostRecorded: agg.costRecorded, deliveryCost: fromP(deliveryP), costComplete: agg.costComplete, missingCostOrders: agg.missingCostOrders,
+      orderProfit: orderProfit, subset: agg.completeSubset,
+      operatingExpenses: fromP(opP),
+      expenseLines: Object.keys(cats).map(function (k) { return { category: k, label: EXPENSE_LABEL[k] || k, amount: fromP(cats[k]) }; }).sort(function (a, b) { return b.amount - a.amount; }),
+      operatingProfit: orderProfit == null ? null : fromP(toP(orderProfit) - opP),
+      stockPurchases: fromP(stockP), ownerDrawings: fromP(drawP), expenseEntries: count,
+      deliveredWithoutDate: undated
+    };
+  }
+
   /* ---------------- main ---------------- */
   function compute(allOrders, opts) {
-    var today = opts.today;
-    var eligible = (allOrders || []).filter(isEligible);
-    var upToToday = eligible.filter(function (o) { return orderDay(o) <= today; });
+    opts = opts || {};
+    var today = opts.today, basis = opts.basis === 'delivered' ? 'delivered' : 'booked';
+    var dayOf = basis === 'delivered' ? deliveredDay : orderDay;
+    var live = (allOrders || []).filter(function (o) { return o && !o.deleted_at; });
+    var eligible = live.filter(function (o) { return o.status !== 'cancelled' && !!dayOf(o); });
+    var upToToday = eligible.filter(function (o) { return dayOf(o) <= today; });
     var futureDated = eligible.length - upToToday.length;
-    var firstDay = upToToday.reduce(function (m, o) { var d = orderDay(o); return !m || d < m ? d : m; }, null);
+    var firstDay = upToToday.reduce(function (m, o) { var d = dayOf(o); return !m || d < m ? d : m; }, null);
     var coverageStart = firstDay ? monthStart(monthKey(firstDay)) : null;
     var period = opts.period || periodFor('this_month', today);
     if (period.key === 'all') period = periodFor('all', today, { coverageStart: coverageStart || today });
     var from = period.from, to = period.to;
-    var inRange = eligible.filter(function (o) { var d = orderDay(o); return d >= from && d <= to; });
+    var inRange = eligible.filter(function (o) { var d = dayOf(o); return d >= from && d <= to; });
 
     var totals = aggregate(inRange);
     var lifetime = aggregate(upToToday);
     lifetime.through = today;
     lifetime.coverageStart = coverageStart;
 
-    // months in range (only from the start of coverage; months before it are not invented)
     var months = [];
     if (coverageStart) {
       var startKey = monthKey(from > coverageStart ? from : coverageStart), endKey = monthKey(to < today ? to : today);
@@ -153,7 +244,7 @@
         for (var k = startKey; k <= endKey; k = addMonths(k, 1)) {
           var ms = monthStart(k), me = monthEnd(k);
           var lo = ms > from ? ms : from, hi = me < to ? me : to;
-          var mOrders = inRange.filter(function (o) { var d = orderDay(o); return d >= lo && d <= hi; });
+          var mOrders = inRange.filter(function (o) { var d = dayOf(o); return d >= lo && d <= hi; });
           var agg = aggregate(mOrders);
           var isCurrent = k === monthKey(today);
           var complete = ms >= from && me <= to && me < today && ms >= coverageStart;
@@ -167,11 +258,10 @@
       }
     }
 
-    // complete-month statistics: numerators and denominators use the same complete months
     var cm = months.filter(function (m) { return m.complete; });
     var M = cm.length, monthly = null;
     if (M) {
-      var cmOrders = inRange.filter(function (o) { var d = orderDay(o); return cm.some(function (m) { return d >= m.from && d <= m.to; }); });
+      var cmOrders = inRange.filter(function (o) { var d = dayOf(o); return cm.some(function (m) { return d >= m.from && d <= m.to; }); });
       var ca = aggregate(cmOrders);
       var sumSalesP = cm.reduce(function (s, m) { return s + toP(m.sales); }, 0);
       monthly = {
@@ -186,35 +276,33 @@
       };
     }
 
-    // comparison: latest complete month vs the month before it, if that is also complete and covered
     var comparison = null;
     if (M >= 1) {
       var last = cm[M - 1], prevKey = addMonths(last.key, -1);
-      var prevInRange = months.filter(function (m) { return m.key === prevKey && m.complete; })[0];
-      var prev = prevInRange;
+      var prev = months.filter(function (m) { return m.key === prevKey && m.complete; })[0];
       if (!prev && coverageStart && monthStart(prevKey) >= coverageStart) {
-        var pOrders = upToToday.filter(function (o) { return monthKey(orderDay(o)) === prevKey; });
-        var pa = aggregate(pOrders); prev = { key: prevKey, label: monthLabel(prevKey), sales: pa.sales, orders: pa.orders };
+        var pOrders = upToToday.filter(function (o) { return monthKey(dayOf(o)) === prevKey; });
+        var pa = aggregate(pOrders); prev = { key: prevKey, label: monthLabel(prevKey), sales: pa.sales, orders: pa.orders, aov: pa.aov };
       }
-      if (prev) comparison = { current: { label: last.label, sales: last.sales, orders: last.orders }, previous: { label: prev.label, sales: prev.sales, orders: prev.orders },
+      if (prev) comparison = { current: { label: last.label, sales: last.sales, orders: last.orders, aov: last.aov }, previous: { label: prev.label, sales: prev.sales, orders: prev.orders, aov: prev.aov },
         changePct: toP(prev.sales) > 0 ? (toP(last.sales) - toP(prev.sales)) / toP(prev.sales) * 100 : null };
     }
 
-    // customers in period (top) + current balances across all eligible orders
+    // customers in period, with each customer's balance today (all their orders)
+    var payByOrder = groupPayments(opts.payments), balances = {};
+    live.forEach(function (o) { var k = customerKey(o); if (!k) return; balances[k] = (balances[k] || 0) + toP(moneyOf(o, payByOrder[o.id]).balance); });
     var custMap = {};
     inRange.forEach(function (o) {
       var k = customerKey(o); if (!k) return;
-      var c = custMap[k] || (custMap[k] = { key: k, name: '', phone: o.phone, orders: 0, salesP: 0, lastDay: '' });
+      var c = custMap[k] || (custMap[k] = { key: k, customerId: o.customer_id || null, name: '', phone: o.phone, orders: 0, salesP: 0, lastDay: '' });
       c.orders++; c.salesP += toP(o.sale_price);
-      var d = orderDay(o); if (d >= c.lastDay) { c.lastDay = d; c.name = o.customer_name || c.name; c.phone = o.phone || c.phone; }
+      var d = dayOf(o); if (d >= c.lastDay) { c.lastDay = d; c.name = o.customer_name || c.name; c.phone = o.phone || c.phone; }
     });
-    var balances = {};
-    eligible.forEach(function (o) { var k = customerKey(o); if (!k) return; var due = Math.max(0, toP(o.sale_price) - toP(o.advance_paid)); balances[k] = (balances[k] || 0) + due; });
     var topCustomers = Object.keys(custMap).map(function (k) { var c = custMap[k];
-      return { key: k, name: c.name, phone: c.phone, orders: c.orders, sales: fromP(c.salesP), aov: fromP(c.salesP) / c.orders, currentBalance: fromP(balances[k] || 0) }; })
+      return { key: k, customerId: c.customerId, name: c.name, phone: c.phone, orders: c.orders, sales: fromP(c.salesP), aov: fromP(c.salesP) / c.orders, currentBalance: fromP(balances[k] || 0) }; })
       .sort(function (a, b) { return b.sales - a.sales || b.orders - a.orders || a.name.localeCompare(b.name); });
 
-    // products (from line items)
+    // products (from pieces). Order-level costs are never spread over products.
     var prod = {}, unitemisedN = 0, unitemisedP = 0;
     inRange.forEach(function (o) {
       var ls = lines(o);
@@ -223,9 +311,9 @@
         var name = String(l.name || '').trim(); if (!name) return;
         var key = l.product_id ? 'id:' + l.product_id : 'name:' + name.toLowerCase();
         var p = prod[key] || (prod[key] = { key: key, productId: l.product_id || null, name: name, custom: !l.product_id, qty: 0, salesP: 0, costP: 0, costMissingLines: 0, orders: {} });
-        var q = +l.qty || 0, lineSale = Math.round(q * toP(l.price)), lineCost = Math.round(q * toP(l.cost));
-        p.qty += q; p.salesP += lineSale; p.orders[o.id] = 1;
-        if (toP(l.cost) !== 0 || toP(l.price) === 0) p.costP += lineCost; else p.costMissingLines++;
+        var q = +l.qty || 0;
+        p.qty += q; p.salesP += Math.round(q * toP(l.price)); p.orders[o.id] = 1;
+        if (blank(l.cost)) p.costMissingLines++; else p.costP += Math.round(q * toP(l.cost));
         p.name = name;
       });
     });
@@ -237,9 +325,11 @@
     var withProfit = products.filter(function (p) { return p.profit != null; });
 
     var res = {
-      basis: 'Booked orders (not cancelled), grouped by order date',
+      basis: basis,
+      basisLabel: basis === 'delivered' ? 'Delivered orders, grouped by delivery date' : 'Booked orders (not cancelled), grouped by order date',
       today: today, period: period, coverageStart: coverageStart, futureDatedOrders: futureDated,
       hasAnyOrders: upToToday.length > 0,
+      deliveredWithoutDate: live.filter(function (o) { return o.status === 'delivered' && !deliveredDay(o); }).length,
       totals: totals, lifetime: lifetime, months: months, monthly: monthly, comparison: comparison,
       customers: { inPeriod: totals.customers, repeat: totals.repeatCustomers, repeatRate: totals.repeatRate, toDate: lifetime.customers,
         unidentifiedInPeriod: totals.unidentifiedOrders, unidentifiedToDate: lifetime.unidentifiedOrders, top: topCustomers },
@@ -247,32 +337,42 @@
         bestBySales: ties(products, function (p) { return Math.round(p.sales * 100); }, true),
         bestByQty: ties(products, function (p) { return p.qty; }, true),
         mostProfitable: ties(withProfit, function (p) { return Math.round(p.profit * 100); }, true),
-        categoriesAvailable: false }
+        categoriesAvailable: false },
+      receivables: receivables(live, opts.payments),
+      pnl: pnl(live, opts.expenses, from, to < today ? to : today)
     };
     res.statements = statements(res);
     return res;
   }
 
-  /* ---------------- plain-language statements (local, rule-based) ---------------- */
+  /* ---------------- plain-language statements (rule-based, from the data only) ---------------- */
   function names(arr, f) { var n = arr.map(f); return n.length <= 1 ? n.join('') : n.slice(0, -1).join(', ') + ' and ' + n[n.length - 1]; }
   function statements(r) {
     var out = [], t = r.totals, mo = r.monthly;
     if (!r.hasAnyOrders) return out;
-    if (!t.orders) { out.push({ kind: 'info', key: 'none', data: {} }); return out; }
-    if (mo) {
-      out.push({ kind: 'best', key: 'highest', data: { months: mo.highest.map(function (m) { return m.label; }), sales: mo.highest[0].sales, tie: mo.highest.length > 1, count: mo.months } });
-      if (mo.months > 1) out.push({ kind: 'low', key: 'lowest', data: { months: mo.lowest.map(function (m) { return m.label; }), sales: mo.lowest[0].sales, tie: mo.lowest.length > 1, zero: mo.lowest[0].sales === 0 } });
+    if (!t.orders) { out.push({ kind: 'info', key: 'none', data: {} }); }
+    else {
+      if (mo) {
+        out.push({ kind: 'best', key: 'highest', data: { months: mo.highest.map(function (m) { return m.label; }), sales: mo.highest[0].sales, tie: mo.highest.length > 1, count: mo.months } });
+        if (mo.months > 1) out.push({ kind: 'low', key: 'lowest', data: { months: mo.lowest.map(function (m) { return m.label; }), sales: mo.lowest[0].sales, tie: mo.lowest.length > 1, zero: mo.lowest[0].sales === 0 } });
+      }
+      out.push({ kind: 'info', key: 'aov', data: { aov: t.aov, orders: t.orders } });
+      if (r.products.bestBySales.length) out.push({ kind: 'best', key: 'topProduct', data: { names: r.products.bestBySales.map(function (p) { return p.name; }), sales: r.products.bestBySales[0].sales } });
+      if (t.repeatCustomers > 0) out.push({ kind: 'info', key: 'repeat', data: { n: t.repeatCustomers } });
+      if (r.comparison) out.push({ kind: 'compare', key: 'compare', data: r.comparison });
+      if (r.comparison && r.comparison.current.aov != null && r.comparison.previous.aov != null && toP(r.comparison.previous.aov) > 0 && toP(r.comparison.current.aov) !== toP(r.comparison.previous.aov))
+        out.push({ kind: 'compare', key: 'aovChange', data: r.comparison });
+      if (t.negativeProfitOrders > 0) out.push({ kind: 'attention', key: 'negative', data: { n: t.negativeProfitOrders } });
+      if (t.missingCostOrders > 0) out.push({ kind: 'attention', key: 'missingCost', data: { n: t.missingCostOrders, of: t.orders } });
+      if (t.expected.orders > 0 && t.costComplete) out.push({ kind: 'info', key: 'expected', data: { n: t.expected.orders, profit: t.expected.profit } });
     }
-    out.push({ kind: 'info', key: 'aov', data: { aov: t.aov, orders: t.orders } });
-    if (r.products.bestBySales.length) out.push({ kind: 'best', key: 'topProduct', data: { names: r.products.bestBySales.map(function (p) { return p.name; }), sales: r.products.bestBySales[0].sales } });
-    if (t.repeatCustomers > 0) out.push({ kind: 'info', key: 'repeat', data: { n: t.repeatCustomers } });
-    if (r.comparison) out.push({ kind: 'compare', key: 'compare', data: r.comparison });
-    if (t.negativeProfitOrders > 0) out.push({ kind: 'attention', key: 'negative', data: { n: t.negativeProfitOrders } });
-    if (t.missingCostOrders > 0) out.push({ kind: 'attention', key: 'missingCost', data: { n: t.missingCostOrders, of: t.orders } });
-    if (t.expected.orders > 0 && t.costComplete) out.push({ kind: 'info', key: 'expected', data: { n: t.expected.orders, profit: t.expected.profit } });
+    if (r.receivables && r.receivables.owedOrders > 0) out.push({ kind: 'attention', key: 'owed', data: { owed: r.receivables.owed, n: r.receivables.owedOrders, delivered: r.receivables.owedDelivered, deliveredN: r.receivables.owedDeliveredOrders } });
     return out;
   }
 
-  return { compute: compute, aggregate: aggregate, periodFor: periodFor, orderDay: orderDay, customerKey: customerKey, costRecorded: costRecorded,
+  return { compute: compute, aggregate: aggregate, periodFor: periodFor, orderDay: orderDay, deliveredDay: deliveredDay,
+    customerKey: customerKey, phoneKey: phoneKey, costRecorded: costRecorded, linesSummary: linesSummary, blank: blank,
+    moneyOf: moneyOf, groupPayments: groupPayments, receivables: receivables, pnl: pnl, PAY_LABEL: PAY_LABEL,
+    EXPENSE_KIND: EXPENSE_KIND, EXPENSE_LABEL: EXPENSE_LABEL,
     monthLabel: monthLabel, monthKey: monthKey, monthEnd: monthEnd, addDays: addDays, ymd: ymd, toP: toP, fromP: fromP, names: names };
 });

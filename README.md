@@ -1,7 +1,89 @@
 # Decorify Orders
 
-Order tracking app for The Decorify Studio.
+Order-tracking app for The Decorify Studio. Runs on any phone from the browser, installs to the home screen like an app, and syncs orders live between phones.
 
-Live app: https://zohasohail927.github.io/decorify-orders/
+## What it does
 
-This repository holds only the app code. Orders are stored in Supabase behind a login.
+| Screen | Shows |
+|---|---|
+| Home | Orders, sales, cost, profit and margin (this month / all time); queue counts (New, In progress, Ready, Delivered); payment due; upcoming deliveries |
+| Orders | All orders with search and status filters; one-tap "Mark In progress / Ready / Delivered"; WhatsApp button |
+| Add / Edit | Customer, phone, lead source, address, **a list of items** (name, qty, price each, cost each), advance, dates, status, notes — totals, profit and balance due calculated live |
+| Products | Saved products with default price and cost; picking one adds it to an order with prices prefilled |
+| Insights | Sales, order profit (earned vs expected), lifetime figures, monthly trends with best/lowest months and averages, per-order averages, customers (by phone), product performance, monthly table and plain-language notes. Read-only. |
+| Customers | Customer records with order history, total sales, average order and balance owed; repeat customers marked |
+| Expenses | Business expenses, stock purchases and owner drawings (kept apart); corrections by voiding |
+| Settings | Account, currency symbol, CSV exports (orders, payments, expenses, customers) |
+
+Sale price = sum of qty × price over the items. Cost = sum of qty × cost when item costs are given, otherwise one total cost typed for the order. Profit = sale price − cost. Balance due = sale price − advance received. Orders created before version 2.1 (free-text items) keep their typed totals.
+
+## Going live (about 30 minutes, once)
+
+Three free services, set up in this order:
+
+| # | Service | What it does | Account |
+|---|---|---|---|
+| 1 | Supabase | Stores every order and product in the cloud; both phones sync live | Sign up with Zoha's email |
+| 2 | GitHub Pages | Hosts the app at a fixed web address | Zoha's GitHub (Zohasohail927) |
+| 3 | GitHub Actions | Copies all data into a private repo every night | Same GitHub account |
+
+### Step 1: Supabase (the data)
+
+1. supabase.com → Start your project → sign up → **New project**. Name `decorify`, region **Singapore** or **Mumbai**, strong database password (save it in her password manager).
+2. **SQL Editor** → New query → paste all of `supabase-schema.sql` → **Run**.
+3. **Authentication → Users → Add user → Create new user**: one email + password you both use. Tick "Auto confirm user".
+4. **Authentication → Sign In / Providers → Email**: turn **off** "Allow new users to sign up". This keeps strangers out.
+5. **Project Settings → API keys**: copy the **Project URL** and the **anon / publishable** key into `config.js`. Also copy the **service_role / secret** key for Step 3. Never put the secret key in the app.
+
+### Step 2: GitHub Pages (the app)
+
+1. github.com (Zohasohail927) → **New repository** → name `decorify-orders` → **Public** → Create. (Public is required for free Pages; it contains code only. The orders live in Supabase behind the login.)
+2. **Add file → Upload files** → upload `index.html`, `config.js`, `sw.js`, `manifest.webmanifest`, `icon-192.png`, `icon-512.png` → Commit.
+3. **Settings → Pages** → Source "Deploy from a branch" → `main` / `(root)` → Save.
+4. After a minute or two: `https://zohasohail927.github.io/decorify-orders/`
+5. On her phone, open that link → Share (iPhone) or ⋮ menu (Android) → **Add to Home Screen** → open from the icon → Settings → sign in.
+
+### Step 3: Nightly backup (the safety net)
+
+1. github.com → **New repository** → name `decorify-backups` → **Private** → Create.
+2. **Add file → Upload files**: upload `README.md`, `restore.sh` and the `data` folder from `decorify-backups`.
+3. **Add file → Create new file**: type the name `.github/workflows/backup.yml` (the slashes create the folders), paste in the contents of `backup-workflow.yml`, then Commit.
+4. That repo → **Settings → Secrets and variables → Actions → New repository secret**: `SUPABASE_URL` = project URL, `SUPABASE_SERVICE_KEY` = the secret key.
+5. **Actions** tab → enable workflows → **Nightly backup → Run workflow**. After a minute `data/orders.json` shows up.
+
+It then runs every night at 02:30 Pakistan time. The nightly call also keeps the Supabase project active, since free projects pause after a week with no activity.
+
+## New phone, lost phone
+
+Nothing lives only on the phone once she is signed in. On the new phone: open the link → Add to Home Screen → Settings → sign in. Every order and product loads back. Only the currency symbol is per-phone (default "Rs").
+
+## If something goes really wrong
+
+- **Supabase project paused:** supabase.com → the project → **Restore**. Data is kept.
+- **Orders deleted by mistake:** in `decorify-backups`, open the History of `data/orders.json`, pick the day before, and run `restore.sh` with that file (or ask Claude to do it).
+- **Manual copy any time:** app → Settings → Export orders (CSV).
+
+## Updating the app later
+
+Replace `index.html` (and `sw.js`) in the `decorify-orders` repo. The data is in Supabase, so updating the app never touches orders. The phone picks up the new version the next time it's opened. If it still looks old, close the app fully and reopen it.
+
+## Insights: how the figures work
+
+- Orders counted: booked orders that are not cancelled, grouped by order date (same as the Home screen).
+- Order profit = sale price minus the direct cost recorded on the order, before business expenses. Earned = delivered; expected = still open.
+- A cost of 0 on an order with a price is treated as not recorded (the form saves a blank as 0); profit is then shown only for orders with costs.
+- Customers are recognised by phone number only.
+- Monthly averages and best/lowest months use complete calendar months only.
+- Calculations live in `insights-core.js`; tests in `tests/insights.test.js` (run: `node tests/insights.test.js`).
+
+## Version 6 (payments, customers, expenses)
+
+Run `supabase-migration-3.sql` once in Supabase → SQL Editor **before** uploading the v6 app files. It is additive (nothing is deleted) and runs as one transaction. `supabase-migration-3-rollback.sql` undoes only the access rules.
+
+- **Payments ledger**: many payments and refunds per order. Balance = order total − (payments − refunds). Overpayment shows as customer credit. A wrong entry is voided with a reason, never deleted. Delivery never marks an order paid.
+- **Costs**: a blank cost means "not entered" (not 0). An order made of pieces has a cost only when every piece has one. Profit is shown only for orders with complete costs, with the count of the rest.
+- **Delivery**: the actual delivery date is saved when an order is marked Delivered; the planned date is kept. Insights can count by order date or by delivery date.
+- **Customers**: orders link to a customer record and keep their own name/phone/address copy. Matching by phone is suggested, never automatic.
+- **Expenses & P&L**: Insights shows delivered sales − direct costs = order profit − business expenses = operating profit. Stock purchases and owner drawings are listed separately.
+- **Safety**: only approved logins (table `app_users`) can see data; every change is written to `audit_log` by the database; two phones editing the same order get a "changed on another phone" choice instead of silently overwriting; drafts are kept on the phone until saved; signing out removes the phone's copy; the service worker never caches customer data.
+- **Tests**: `node tests/insights.test.js`, `node tests/finance.test.js` (run with `TZ=Asia/Karachi`); SQL access tests in `tests/sql/`; end-to-end results in `tests/e2e-results.txt`.

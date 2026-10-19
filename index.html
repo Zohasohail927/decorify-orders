@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <title>Decorify Orders</title>
 <meta name="theme-color" content="#FAF7F2" id="meta-theme">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -603,6 +605,166 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
   .split{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:20px;align-items:start}
   .dpanel{position:sticky;top:24px;background:var(--surface);border-radius:24px;box-shadow:inset 0 0 0 1px var(--border),var(--shadow-2);overflow:hidden;max-height:calc(100dvh - 48px);overflow-y:auto}
 }
+
+/* ======================================================================
+   v6 COMPONENTS: sign-in gate, connection banner, money, payments,
+   customers, expenses, drafts and save states
+   ====================================================================== */
+.btn.ok-flash{background:var(--success)!important;color:#fff!important}
+.btn .ic{transition:transform var(--t1) var(--ease)}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.ib:focus-visible,.chip:focus-visible,.btn:focus-visible{box-shadow:var(--focus-ring)!important}
+/* sign-in gate */
+.gate{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;padding:24px;background:radial-gradient(120% 80% at 50% 0%,var(--rose-soft),var(--background) 60%)}
+.gate.show{display:flex}
+.gate .gcard{width:min(420px,100%);background:var(--surface);border-radius:var(--r-xl);box-shadow:var(--shadow-3),inset 0 0 0 1px var(--border);padding:28px 24px 24px;text-align:center}
+.gate .seal{width:64px;height:64px;font-size:34px;margin:0 auto 14px}
+.gate h1{font:400 36px/1.05 var(--font-display);margin:0}
+.gate p{color:var(--text-secondary);font-size:14px;margin:8px 0 18px}
+.gate form{text-align:left}
+.gate .err{display:none;margin-top:12px;padding:10px 12px;border-radius:12px;background:var(--danger-soft);color:var(--danger);font-size:13px;font-weight:600}
+.gate .err.show{display:block}
+.gate .fine{font-size:12px;color:var(--text-muted);margin-top:14px;text-align:center}
+/* connection banner */
+.netbar{display:none;position:sticky;top:calc(62px + env(safe-area-inset-top));z-index:19;margin:0 16px 8px;padding:10px 14px;border-radius:14px;background:var(--warning-soft);color:var(--warning);font-size:13px;font-weight:600;line-height:1.4;align-items:flex-start;gap:10px;box-shadow:inset 0 0 0 1px rgba(135,90,23,.18)}
+.netbar.show{display:flex}
+.netbar .ic{flex:none;margin-top:1px}
+.netbar.schema{background:var(--danger-soft);color:var(--danger)}
+/* payment status pills */
+.pay{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;padding:5px 10px;border-radius:var(--pill);white-space:nowrap}
+.pay.unpaid{background:var(--warning-soft);color:var(--warning)}
+.pay.partly{background:var(--s-mk-b);color:var(--s-mk)}
+.pay.paid{background:var(--success-soft);color:var(--success)}
+.pay.credit{background:var(--s-rd-b);color:var(--s-rd)}
+.pay.none{background:var(--surface-2);color:var(--text-muted)}
+.orow .m .credit{color:var(--s-rd)}
+/* money card in order detail */
+.money{background:var(--surface-2);border-radius:18px;padding:14px 16px 12px;box-shadow:inset 0 0 0 1px var(--border)}
+.money .mr{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:14px;padding:3px 0}
+.money .mr span{color:var(--text-secondary)}
+.money .mr b{font-weight:800}
+.money .mr.big{margin-top:6px;padding-top:10px;border-top:1px dashed var(--border-strong)}
+.money .mr.big span{font-weight:700;color:var(--text-primary)}
+.money .mr.big b{font:400 30px/1 var(--font-display);letter-spacing:-.01em}
+.money .mr.big.due b{color:var(--warning)}.money .mr.big.paid b{color:var(--success)}.money .mr.big.credit b{color:var(--s-rd)}
+.paybar{height:8px;border-radius:8px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border);overflow:hidden;margin-top:10px}
+.paybar i{display:block;height:100%;border-radius:8px;background:linear-gradient(90deg,var(--gold),var(--success));transition:width var(--t3) var(--ease)}
+.payact{display:flex;gap:8px;margin-top:12px}
+.payact .btn{flex:1}
+.ph{margin-top:12px}
+.ph-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--border)}
+.ph-row:first-child{border-top:0}
+.ph-row .pi{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex:none;background:var(--success-soft);color:var(--success)}
+.ph-row.refund .pi{background:var(--s-rd-b);color:var(--s-rd)}
+.ph-row .pt{flex:1;min-width:0}
+.ph-row .pt b{display:block;font-size:13.5px}
+.ph-row .pt span{display:block;font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ph-row .pa{font-weight:800;font-size:14px;white-space:nowrap}
+.ph-row.void{opacity:.62}
+.ph-row.void .pa{text-decoration:line-through}
+.ph-row .more-b{width:34px;height:34px;border-radius:10px;border:0;background:none;color:var(--text-muted);display:grid;place-items:center}
+.ph-row .more-b:hover{background:var(--surface-2);color:var(--text-primary)}
+.ph-empty{font-size:13px;color:var(--text-muted);padding:6px 0 0}
+.warnline{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;font-weight:600;color:var(--warning);margin-top:6px;line-height:1.4}
+.warnline .ic{width:15px;height:15px;flex:none;margin-top:1px}
+.activity{font-size:12.5px;color:var(--text-secondary)}
+.activity .ar{display:flex;gap:10px;padding:6px 0;border-top:1px dashed var(--border)}
+.activity .ar:first-child{border-top:0}
+.activity .ar i{width:8px;height:8px;border-radius:50%;background:var(--gold);flex:none;margin-top:6px}
+.activity .ar b{color:var(--text-primary);font-weight:700}
+.activity .ar span{color:var(--text-muted)}
+/* bottom sheet form (payments, customers, expenses) */
+.fsheet .body{padding:18px 22px 6px}
+.fsheet h3{font:400 30px/1 var(--font-display);margin:2px 0 4px}
+.fsheet .seg{margin-top:12px}
+.fsheet .calcline{margin-top:12px;padding:10px 12px;border-radius:12px;background:var(--surface-2);font-size:13px;color:var(--text-secondary)}
+.fsheet .calcline b{color:var(--text-primary)}
+/* form extras */
+.draft-note,.form-err{display:none;align-items:center;gap:10px;margin-top:12px;padding:11px 14px;border-radius:14px;font-size:13px;font-weight:600;line-height:1.4}
+.draft-note{background:var(--gold-soft);color:var(--gold-ink)}
+.form-err{background:var(--danger-soft);color:var(--danger)}
+.draft-note.show,.form-err.show{display:flex}
+.draft-note .sp,.form-err .sp{flex:1}
+.draft-note button,.form-err button{border:0;background:none;font-weight:800;color:inherit;text-decoration:underline;padding:4px}
+.sugwrap{position:relative}
+.sug{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:16;background:var(--surface-elevated);border-radius:16px;box-shadow:var(--shadow-3),inset 0 0 0 1px var(--border);padding:6px;display:none;max-height:260px;overflow:auto}
+.sug.show{display:block}
+.sug button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;background:none;padding:10px;border-radius:12px}
+.sug button:hover,.sug button:focus-visible{background:var(--surface-2)}
+.sug .av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--rose-soft);color:var(--primary);font:400 17px/1 var(--font-display);flex:none}
+.sug b{display:block;font-size:14px}.sug span{display:block;font-size:12px;color:var(--text-muted)}
+.linkchip{display:none;align-items:center;gap:8px;margin-top:8px;padding:7px 8px 7px 12px;border-radius:var(--pill);background:var(--success-soft);color:var(--success);font-size:12.5px;font-weight:700;width:max-content;max-width:100%}
+.linkchip.show{display:inline-flex}
+.linkchip button{border:0;background:rgba(255,255,255,.5);color:inherit;border-radius:var(--pill);font-size:11.5px;font-weight:800;padding:4px 9px}
+html[data-theme=dark] .linkchip button{background:rgba(0,0,0,.25)}
+.phone-match{display:none;margin-top:8px;padding:10px 12px;border-radius:12px;background:var(--s-mk-b);color:var(--s-mk);font-size:12.5px;font-weight:600;align-items:center;gap:10px}
+.phone-match.show{display:flex}
+.phone-match .sp{flex:1}
+.phone-match button{border:0;border-radius:var(--pill);padding:6px 11px;font-weight:800;font-size:12px;background:var(--s-mk);color:var(--surface)}
+.paidnote{margin-top:14px;padding:12px 14px;border-radius:14px;background:var(--surface-2);font-size:13px;color:var(--text-secondary)}
+.paidnote b{color:var(--text-primary)}
+/* customers */
+.ccard{display:flex;align-items:center;gap:14px;width:100%;text-align:left;border:0;padding:14px 16px;border-radius:18px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border);margin-bottom:8px;transition:transform var(--t1),box-shadow var(--t2)}
+.ccard:hover{transform:translateY(-1px);box-shadow:inset 0 0 0 1px var(--border-strong),var(--shadow-1)}
+.ccard .av{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--rose-soft);color:var(--primary);font:400 22px/1 var(--font-display)}
+.ccard .cn{flex:1;min-width:0}
+.ccard .cn b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ccard .cn span{display:block;font-size:12px;color:var(--text-muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ccard .cr{text-align:right;flex:none}
+.ccard .cr b{display:block;font-weight:800;font-size:14px}
+.ccard .cr span{font-size:11.5px;font-weight:700}
+.ccard .cr .due{color:var(--warning)}.ccard .cr .credit{color:var(--s-rd)}.ccard .cr .muted{color:var(--text-muted)}
+.rep{font-size:10.5px;font-weight:800;color:var(--gold-ink);background:var(--gold-soft);padding:3px 8px;border-radius:var(--pill);margin-left:6px;vertical-align:2px}
+.cstats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cstats div{background:var(--surface-2);border-radius:14px;padding:10px 12px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted)}
+.cstats b{display:block;font:800 17px/1.2 var(--font-ui);letter-spacing:-.01em;color:var(--text-primary);text-transform:none;margin-top:3px}
+/* expenses */
+.esum{display:grid;grid-template-columns:1fr;gap:10px;margin-top:14px}
+.erow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;padding:12px 14px;border-radius:16px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border);margin-bottom:8px;transition:transform var(--t1),box-shadow var(--t2)}
+.erow:hover{transform:translateY(-1px);box-shadow:inset 0 0 0 1px var(--border-strong),var(--shadow-1)}
+.erow .ei{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;flex:none;background:var(--gold-soft);color:var(--gold-ink)}
+.erow.stock .ei{background:var(--s-mk-b);color:var(--s-mk)}.erow.drawings .ei{background:var(--s-rd-b);color:var(--s-rd)}
+.erow .et{flex:1;min-width:0}.erow .et b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.erow .et span{font-size:12px;color:var(--text-muted);font-weight:600}
+.erow .ea{font-weight:800;white-space:nowrap}
+.erow.void{opacity:.6}.erow.void .ea{text-decoration:line-through}
+.egroup{margin:18px 0 8px;display:flex;justify-content:space-between;align-items:baseline}
+.egroup b{font:400 21px/1 var(--font-display)}
+.egroup span{font-size:12px;font-weight:800;color:var(--text-muted)}
+/* studio links (settings) */
+.slinks{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.slink{display:flex;flex-direction:column;gap:8px;text-align:left;border:0;padding:16px;border-radius:20px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border),var(--shadow-1);transition:transform var(--t1)}
+.slink:hover{transform:translateY(-1px)}
+.slink .si{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--rose-soft);color:var(--primary)}
+.slink b{font:400 22px/1 var(--font-display)}
+.slink span{font-size:12px;color:var(--text-muted);font-weight:600}
+/* insights additions */
+.pl{background:var(--surface);border-radius:var(--r-l);box-shadow:inset 0 0 0 1px var(--border),var(--shadow-1);padding:8px 20px 14px}
+.pl .kvr{font-size:14px;padding:8px 0;border-bottom:1px solid var(--border)}
+.pl .kvr.sub{font-size:13px;padding:5px 0 5px 14px;border-bottom:0;color:var(--text-muted)}
+.pl .kvr.sub span{color:var(--text-muted)}
+.pl .kvr.tot{border-bottom:0;border-top:2px solid var(--text-primary);font-size:16px;padding-top:10px}
+.pl .kvr.tot b{font:400 26px/1 var(--font-display)}
+.pl .kvr.mid{border-top:1px dashed var(--border-strong);border-bottom:1px dashed var(--border-strong)}
+.pl .kvr.mid b{font-weight:800}
+.pl .aside{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:12.5px;color:var(--text-secondary)}
+.owed .top{display:flex;gap:10px;flex-wrap:wrap}
+.basis-pick{margin-top:8px}
+@media (min-width:900px){
+  .netbar{top:12px;margin:0 0 12px}
+  .esum{grid-template-columns:repeat(3,1fr)}
+  .cstats{grid-template-columns:repeat(4,1fr)}
+  .slinks{display:none}
+  .clist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
+}
+/* layout fixes */
+.detail .dh-top{padding-right:52px;flex-wrap:wrap;justify-content:flex-start;gap:6px}
+.pgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.prod b{overflow-wrap:anywhere}
+@media (min-width:900px){.pgrid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.pl .kvr b{white-space:nowrap}
+.pl .kvr span{min-width:0}
+@media (min-width:900px){.rail .sync{max-width:76px;overflow:hidden}.rail .sync span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+
 </style>
 </head>
 <body>
@@ -644,38 +806,64 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
   <symbol id="i-trend-down" viewBox="0 0 24 24"><path d="M3 7l6 6 4-4 8 8M15 17h6v-6"/></symbol>
   <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></symbol>
   <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.2A6.5 6.5 0 0 1 21.5 20"/></symbol>
+  <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M5 3h14v18l-2.5-1.5L14 21l-2-1.5L10 21l-2.5-1.5L5 21z"/><path d="M9 8h6M9 12h6M9 16h3"/></symbol>
+  <symbol id="i-wifi-off" viewBox="0 0 24 24"><path d="M2 8.8a15 15 0 0 1 4.2-2.6M9.8 5.2A15 15 0 0 1 22 8.8M5 12.5a10 10 0 0 1 3.5-2M14.4 10.3A10 10 0 0 1 19 12.5M8.5 16a5 5 0 0 1 7 0M12 20h.01M3 3l18 18"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></symbol>
+  <symbol id="i-in" viewBox="0 0 24 24"><path d="M12 4v12M6 10l6 6 6-6"/><path d="M4 20h16"/></symbol>
 </svg>
+
+
+<!-- sign-in gate: shown whenever the shared account isn't signed in -->
+<div class="gate" id="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title">
+  <div class="gcard">
+    <span class="seal" aria-hidden="true">D</span>
+    <h1 id="gate-title">Decorify Studio</h1>
+    <p id="gate-sub">Sign in to open your orders. Your records are kept in your shared account, not on this phone.</p>
+    <form id="gate-form" novalidate>
+      <div class="field"><label for="a-email">Email</label><input class="input" id="a-email" type="email" autocapitalize="off" autocomplete="username" inputmode="email"></div>
+      <div class="field"><label for="a-pass">Password</label><input class="input" id="a-pass" type="password" autocomplete="current-password"></div>
+      <button class="btn primary block" id="a-login" type="submit" style="margin-top:18px"><span class="spin"></span><span class="lbl2">Sign in</span></button>
+      <div class="err" id="gate-err" role="alert"></div>
+    </form>
+    <div class="fine">Only approved Decorify accounts can see business records.</div>
+  </div>
+</div>
 
 <div class="shell">
 <aside class="rail" aria-label="Main">
   <span class="seal" aria-hidden="true">D</span>
   <nav>
-    <button data-go="home" class="on" aria-label="Home">
-      <svg class="ic"><use href="#i-home"/></svg>Home
-    </button>
+    <button data-go="home" class="on" aria-label="Home"><svg class="ic"><use href="#i-home"/></svg>Home</button>
     <button data-go="orders" aria-label="Orders"><svg class="ic"><use href="#i-list"/></svg>Orders</button>
+    <button data-go="customers" aria-label="Customers"><svg class="ic"><use href="#i-users"/></svg>Clients</button>
     <button data-go="products" aria-label="Products"><svg class="ic"><use href="#i-tag"/></svg>Products</button>
+    <button data-go="expenses" aria-label="Expenses"><svg class="ic"><use href="#i-receipt"/></svg>Expenses</button>
     <button data-go="insights" aria-label="Insights"><svg class="ic"><use href="#i-chart"/></svg>Insights</button>
     <button data-go="settings" aria-label="Settings"><svg class="ic"><use href="#i-cog"/></svg>Settings</button>
   </nav>
   <button class="btn gold new" data-go="new" title="New order" aria-label="New order"><svg class="ic"><use href="#i-plus"/></svg></button>
   <div class="sp"></div>
   <div class="tgl" role="group" aria-label="Theme">
-    <button data-theme-set="light" title="Light"><svg class="ic"><use href="#i-sun"/></svg></button>
-    <button data-theme-set="dark" title="Dark"><svg class="ic"><use href="#i-moon"/></svg></button>
+    <button data-theme-set="light" title="Light" aria-label="Light theme"><svg class="ic"><use href="#i-sun"/></svg></button>
+    <button data-theme-set="dark" title="Dark" aria-label="Dark theme"><svg class="ic"><use href="#i-moon"/></svg></button>
   </div>
-  <div class="sync" title="Sync status"><span class="dot" data-dot></span><span data-synctext>Local</span></div>
+  <div class="sync" title="Sync status"><span class="dot" data-dot></span><span data-synctext>…</span></div>
 </aside>
 
 <div class="content">
 <header class="topbar">
   <span class="seal" aria-hidden="true">D</span>
   <div class="sp"></div>
-  <div class="sync"><span class="dot" data-dot></span><span data-synctext>Local</span></div>
+  <div class="sync"><span class="dot" data-dot></span><span data-synctext>…</span></div>
   <button class="ib" id="m-search" aria-label="Search orders"><svg class="ic"><use href="#i-search"/></svg></button>
   <button class="ib" id="m-theme" aria-label="Switch theme"><svg class="ic"><use href="#i-moon"/></svg></button>
-  <button class="ib" data-go="settings" aria-label="Settings"><svg class="ic"><use href="#i-cog"/></svg></button>
+  <button class="ib" data-go="settings" aria-label="Studio and settings"><svg class="ic"><use href="#i-cog"/></svg></button>
 </header>
+<div class="netbar" id="netbar" role="status"><svg class="ic"><use href="#i-wifi-off"/></svg><span id="netbar-t"></span></div>
 
 <main>
 <!-- ================= HOME ================= -->
@@ -693,15 +881,15 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
     <div class="box">
       <div class="ribbon"></div>
       <svg class="bow" viewBox="0 0 48 46" aria-hidden="true"><path d="M24 22c-6-10-18-12-20-6s10 9 20 6zM24 22c6-10 18-12 20-6s-10 9-20 6z" fill="var(--ribbon)"/><path d="M24 22l-7 20M24 22l7 20" stroke="var(--ribbon)" stroke-width="4" stroke-linecap="round"/><circle cx="24" cy="22" r="4" fill="#E4C98F"/></svg>
-      <div class="in"><div class="lbl" id="k-profit-l">Profit · this month</div>
+      <div class="in"><div class="lbl" id="k-profit-l">Order profit · this month</div>
         <div class="big num" id="k-profit">0</div>
-        <div class="subt"><b id="k-margin">0%</b> margin on <span id="k-sales">0</span> in sales</div></div>
-      <div class="bars" id="chart" aria-label="Profit by month"></div>
+        <div class="subt" id="k-profit-s"></div></div>
+      <div class="bars" id="chart" aria-label="Order profit by month"></div>
     </div>
     <div class="hs">
-      <div class="tile kp due k-due"><span class="chip-i"><svg class="ic"><use href="#i-wallet"/></svg></span><div class="lbl">Payment due</div><div class="v num" id="k-due">0</div><div class="s" id="k-due-s">Across open orders</div></div>
+      <button class="tile kp due k-due" data-go="customers" style="text-align:left;border:0"><span class="chip-i"><svg class="ic"><use href="#i-wallet"/></svg></span><div class="lbl">Money owed</div><div class="v num" id="k-due">0</div><div class="s" id="k-due-s">Nothing outstanding</div></button>
       <div class="tile kp k-sales"><span class="chip-i"><svg class="ic"><use href="#i-coins"/></svg></span><div class="lbl">Sales</div><div class="v num" id="k-sales2">0</div><div class="s" id="k-sales-s">This month</div></div>
-      <div class="tile kp k-cost"><span class="chip-i"><svg class="ic"><use href="#i-box"/></svg></span><div class="lbl">Cost</div><div class="v num" id="k-cost">0</div><div class="s">Materials &amp; delivery</div></div>
+      <div class="tile kp k-cost"><span class="chip-i"><svg class="ic"><use href="#i-box"/></svg></span><div class="lbl">Direct cost</div><div class="v num" id="k-cost">0</div><div class="s" id="k-cost-s">Materials &amp; delivery</div></div>
       <div class="tile kp ord k-ord"><span class="chip-i"><svg class="ic"><use href="#i-gift"/></svg></span><div class="lbl">Orders</div><div class="v num" id="k-orders">0</div><div class="s" id="k-orders-s">Placed this month</div></div>
     </div>
   </div>
@@ -737,6 +925,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
         <button class="chip" data-s="in_progress">Making<span class="n"></span></button>
         <button class="chip" data-s="ready">Ready<span class="n"></span></button>
         <button class="chip" data-s="delivered">Delivered<span class="n"></span></button>
+        <button class="chip" data-s="due">Money due<span class="n"></span></button>
         <button class="chip" data-s="cancelled">Cancelled<span class="n"></span></button>
         <button class="chip" data-s="all">All<span class="n"></span></button>
       </div>
@@ -754,6 +943,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
     <div class="hello"><div class="d" id="form-eyebrow">New order</div><h1 id="form-title">What are we <em>making?</em></h1></div>
     <button class="btn ghost sm" id="back" type="button"><svg class="ic sm"><use href="#i-back"/></svg>Back</button>
   </div>
+  <div class="draft-note" id="draft-note" role="status"><svg class="ic sm"><use href="#i-history"/></svg><span id="draft-t">Your unsaved changes were restored.</span><span class="sp"></span><button type="button" id="draft-discard">Discard</button></div>
   <div class="steps" id="steps">
     <button type="button" data-step="fc-customer" class="on"><i></i>Customer</button>
     <button type="button" data-step="fc-items"><i></i>Pieces</button>
@@ -761,15 +951,16 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
     <button type="button" data-step="fc-del"><i></i>Delivery</button>
   </div>
   <form id="form" novalidate autocomplete="off">
-  <input type="hidden" id="f-id">
   <div class="fcard" id="fc-customer">
     <div class="ft"><span class="n">1</span>Customer</div>
-    <div class="field"><label for="f-customer">Customer name<span class="req">*</span></label><input class="input" id="f-customer" placeholder="e.g. Ayesha Khan"><div class="hint" id="h-customer">Please enter the customer's name</div></div>
+    <div class="field sugwrap"><label for="f-customer">Customer name<span class="req">*</span></label><input class="input" id="f-customer" placeholder="Type a name or pick a past customer" aria-autocomplete="list" aria-controls="cust-sug"><div class="sug" id="cust-sug" role="listbox"></div><div class="hint" id="h-customer">Please enter the customer's name</div>
+      <div class="linkchip" id="cust-link"><svg class="ic xs"><use href="#i-check"/></svg><span id="cust-link-t"></span><button type="button" id="cust-unlink">Unlink</button></div></div>
     <div class="row2">
       <div class="field"><label for="f-phone">Phone / WhatsApp</label><input class="input" id="f-phone" inputmode="tel" placeholder="03xx xxxxxxx"></div>
-      <div class="field"><label for="f-source">Lead from</label><div class="selectwrap"><select id="f-source"><option>Instagram</option><option>Facebook</option><option>WhatsApp</option><option>Referral</option><option>Other</option></select></div></div>
+      <div class="field"><label for="f-source">Lead from</label><div class="selectwrap"><select id="f-source"><option>Instagram</option><option>Facebook</option><option>WhatsApp</option><option>Referral</option><option>Repeat customer</option><option>Other</option></select></div></div>
     </div>
-    <div class="field"><label for="f-address">Delivery address</label><textarea id="f-address" placeholder="House, street, area, city"></textarea></div>
+    <div class="phone-match" id="phone-match"><span id="phone-match-t"></span><span class="sp"></span><button type="button" id="phone-match-use">Use</button></div>
+    <div class="field"><label for="f-address">Delivery address</label><textarea id="f-address" placeholder="House, street, area, city"></textarea><div class="sub">Changing it here affects this order only.</div></div>
   </div>
   <div class="fcard" id="fc-items">
     <div class="ft"><span class="n">2</span>Pieces<span class="req" style="font:700 14px var(--font-ui);color:var(--danger)">*</span></div>
@@ -778,7 +969,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
     <div class="lines-h" id="lines-h" style="display:none"><span class="lbl">In this order</span><span class="lbl" id="lines-n"></span></div>
     <div id="lines"></div>
     <div id="legacy" style="display:none">
-      <div class="field"><label for="f-items">Items (text)</label><textarea id="f-items" placeholder="e.g. 50 wedding favor cones, 2 scented candles"></textarea></div>
+      <div class="field"><label for="f-items">Items (text)</label><textarea id="f-items" placeholder="e.g. 50 wedding favour cones, 2 scented candles"></textarea></div>
       <div class="field"><label for="f-qty">Quantity</label><input class="input" id="f-qty" type="number" inputmode="numeric" min="1" value="1"></div>
     </div>
     <div class="field"><label for="f-notes">Personalisation &amp; notes</label><textarea id="f-notes" class="note-in" placeholder="Names, dates, colours, ribbon, design details"></textarea></div>
@@ -786,37 +977,80 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
       <option value="new">New</option><option value="in_progress">Making</option><option value="ready">Ready</option><option value="delivered">Delivered</option><option value="cancelled">Cancelled</option></select></div></div>
   </div>
   <div class="fcard" id="fc-pay">
-    <div class="ft"><span class="n">3</span>Payment</div>
+    <div class="ft"><span class="n">3</span>Price, cost &amp; payment</div>
     <div class="row2">
-      <div class="field"><label for="f-sale">Sale price (total)</label><div class="prefix"><span data-cur>Rs</span><input class="input num" id="f-sale" type="number" inputmode="decimal" min="0" placeholder="0"></div><div class="sub" id="s-sale"></div></div>
-      <div class="field"><label for="f-cost">Cost (materials + delivery)</label><div class="prefix"><span data-cur>Rs</span><input class="input num" id="f-cost" type="number" inputmode="decimal" min="0" placeholder="0"></div><div class="sub" id="s-cost"></div></div>
+      <div class="field"><label for="f-sale">Order total</label><div class="prefix"><span data-cur>Rs</span><input class="input num" id="f-sale" type="number" inputmode="decimal" min="0" placeholder="0"></div><div class="sub" id="s-sale"></div></div>
+      <div class="field"><label for="f-cost">Materials cost</label><div class="prefix"><span data-cur>Rs</span><input class="input num" id="f-cost" type="number" inputmode="decimal" min="0" placeholder="Not known"></div><div class="sub" id="s-cost"></div></div>
     </div>
-    <div class="field"><label for="f-advance">Advance received</label><div class="prefix"><span data-cur>Rs</span><input class="input num" id="f-advance" type="number" inputmode="decimal" min="0" placeholder="0"></div></div>
+    <div class="field"><label for="f-delcost">Delivery cost</label><div class="prefix"><span data-cur>Rs</span><input class="input num" id="f-delcost" type="number" inputmode="decimal" min="0" placeholder="0"></div><div class="sub">What you pay the rider or courier for this order. Leave blank if there's none. It's added to the order's cost.</div></div>
+    <div id="adv-new">
+      <div class="row2">
+        <div class="field"><label for="f-advance">Advance received now</label><div class="prefix"><span data-cur>Rs</span><input class="input num" id="f-advance" type="number" inputmode="decimal" min="0" placeholder="0"></div></div>
+        <div class="field"><label for="f-advmethod">Paid by</label><div class="selectwrap"><select id="f-advmethod"></select></div></div>
+      </div>
+      <div class="sub">Saved as the first payment. Later payments are added from the order screen.</div>
+    </div>
+    <div class="paidnote" id="adv-edit" style="display:none"></div>
   </div>
   <div class="fcard" id="fc-del">
-    <div class="ft"><span class="n">4</span>Delivery</div>
+    <div class="ft"><span class="n">4</span>Dates</div>
     <div class="row2">
       <div class="field"><label for="f-date">Order date</label><input class="input" id="f-date" type="date"></div>
-      <div class="field"><label for="f-delivery">Delivery date</label><input class="input" id="f-delivery" type="date"></div>
+      <div class="field"><label for="f-delivery">Planned delivery</label><input class="input" id="f-delivery" type="date"></div>
     </div>
+    <div class="field" id="fd-delivered" style="display:none"><label for="f-delivered">Delivered on</label><input class="input" id="f-delivered" type="date"><div class="sub">The day it actually reached the customer.</div></div>
   </div>
+  <div class="form-err" id="form-err" role="alert"><svg class="ic sm"><use href="#i-alert"/></svg><span id="form-err-t"></span><span class="sp"></span></div>
   <div class="sumbar">
     <div class="m"><div>Total<b class="num" id="c-total">0</b></div><div>Profit<b class="num" id="c-profit">0</b></div><div class="du">Due<b class="num" id="c-due">0</b></div></div>
     <button class="btn gold" id="save" type="submit"><span class="spin"></span><span class="lbl2">Save order</span></button>
   </div>
-  <button class="btn danger block" id="delete" type="button" style="display:none;margin-top:14px"><svg class="ic"><use href="#i-trash"/></svg>Delete order</button>
+  <button class="btn danger block" id="delete" type="button" style="display:none;margin-top:14px"><svg class="ic"><use href="#i-trash"/></svg>Remove order</button>
   </form>
   </div>
+</section>
+
+<!-- ================= CUSTOMERS ================= -->
+<section class="screen" id="s-customers">
+  <div class="pagehead">
+    <div class="hello"><div class="d">Clients</div><h1>Customers</h1><p id="cust-sub"></p></div>
+    <button class="btn primary only-desk" id="c-new-d"><svg class="ic"><use href="#i-plus"/></svg>New customer</button>
+  </div>
+  <div class="search" id="csearchwrap" style="margin:14px 0 12px"><svg class="ic"><use href="#i-search"/></svg><input id="cq" class="input" placeholder="Search name or phone…" type="search" aria-label="Search customers"></div>
+  <div class="chips" id="cchips" style="margin-bottom:12px">
+    <button class="chip on" data-c="all">All<span class="n"></span></button>
+    <button class="chip" data-c="owing">Owe money<span class="n"></span></button>
+    <button class="chip" data-c="repeat">Repeat<span class="n"></span></button>
+  </div>
+  <div id="clist" class="clist"></div>
+  <button class="btn tonal block only-phone" id="c-new" style="margin-top:12px"><svg class="ic"><use href="#i-plus"/></svg>New customer</button>
 </section>
 
 <!-- ================= PRODUCTS ================= -->
 <section class="screen" id="s-products">
   <div class="pagehead">
-    <div class="hello"><div class="d">Catalogue</div><h1>Products</h1><p>Saved pieces prefill price and cost on new orders. Every order line stays editable.</p></div>
+    <div class="hello"><div class="d">Catalogue</div><h1>Products</h1><p>Saved pieces fill in price and cost on new orders. Every order line stays editable.</p></div>
     <button class="btn primary only-desk" id="p-new-d"><svg class="ic"><use href="#i-plus"/></svg>New product</button>
   </div>
   <div id="plist" class="plist" style="margin-top:16px"></div>
   <button class="btn tonal block only-phone" id="p-new" style="margin-top:12px"><svg class="ic"><use href="#i-plus"/></svg>New product</button>
+</section>
+
+<!-- ================= EXPENSES ================= -->
+<section class="screen" id="s-expenses">
+  <div class="pagehead">
+    <div class="hello"><div class="d">Running the studio</div><h1>Expenses</h1><p>Costs that aren't part of a single order: packaging stock, courier, ads, bills.</p></div>
+    <button class="btn primary only-desk" id="e-new-d"><svg class="ic"><use href="#i-plus"/></svg>Add expense</button>
+  </div>
+  <div class="chips" id="echips" style="margin-top:14px">
+    <button class="chip on" data-ep="this_month">This month</button>
+    <button class="chip" data-ep="last_month">Last month</button>
+    <button class="chip" data-ep="this_year">This year</button>
+    <button class="chip" data-ep="all">All</button>
+  </div>
+  <div class="esum" id="esum"></div>
+  <button class="btn tonal block only-phone" id="e-new" style="margin-top:14px"><svg class="ic"><use href="#i-plus"/></svg>Add expense</button>
+  <div id="elist"></div>
 </section>
 
 <!-- ================= INSIGHTS ================= -->
@@ -839,16 +1073,21 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
       <div><label for="ins-to">To</label><input class="input" type="date" id="ins-to"></div>
       <button class="btn primary sm" id="ins-apply" type="button">Apply</button>
     </div>
+    <div class="seg basis-pick" id="ins-basis-pick" role="group" aria-label="Count orders by"><button data-basis="booked" class="on">By order date</button><button data-basis="delivered">By delivery date</button></div>
     <div class="ins-range"><span class="ins-dates num" id="ins-dates"></span>
       <details class="basis"><summary><svg class="ic sm"><use href="#i-info"/></svg>How these figures work</summary><div class="basis-body" id="ins-basis"></div></details></div>
   </div>
   <div id="ins-body"></div>
 </section>
 
-<!-- ================= SETTINGS ================= -->
+<!-- ================= SETTINGS / STUDIO ================= -->
 <section class="screen" id="s-settings">
   <div class="pagehead"><div class="hello"><div class="d">Studio</div><h1>Settings</h1></div></div>
   <div class="formwrap">
+  <div class="slinks">
+    <button class="slink" data-go="products"><span class="si"><svg class="ic"><use href="#i-tag"/></svg></span><b>Products</b><span>Prices &amp; costs</span></button>
+    <button class="slink" data-go="expenses"><span class="si"><svg class="ic"><use href="#i-receipt"/></svg></span><b>Expenses</b><span>Running costs</span></button>
+  </div>
   <div class="card">
     <div class="ct"><svg class="ic"><use href="#i-palette"/></svg>Appearance</div>
     <p class="note" style="margin:0">Choose a look. System follows your phone's light or dark mode automatically.</p>
@@ -862,33 +1101,31 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
     <div class="ct"><svg class="ic"><use href="#i-user"/></svg>Studio</div>
     <div class="row2">
       <div class="field"><label for="set-name">Your name</label><input class="input" id="set-name" placeholder="e.g. Zoha"></div>
-      <div class="field"><label for="set-cur">Currency symbol</label><input class="input" id="set-cur" placeholder="Rs"></div>
+      <div class="field"><label for="set-cur">Currency symbol</label><input class="input" id="set-cur" placeholder="Rs" maxlength="4"></div>
     </div>
     <p class="sub">Used for the greeting on the home screen. Saved on this device.</p>
     <button class="btn secondary" id="set-save" style="margin-top:12px">Save</button>
   </div>
   <div class="card">
-    <div class="ct"><svg class="ic"><use href="#i-cloud"/></svg>Sync between phones</div>
+    <div class="ct"><svg class="ic"><use href="#i-cloud"/></svg>Account</div>
     <p class="note" id="syncNote" style="margin:0 0 6px"></p>
-    <div id="sb-config">
+    <div id="sb-config" style="display:none">
       <div class="field"><label for="sb-url">Supabase project URL</label><input class="input" id="sb-url" placeholder="https://xxxx.supabase.co" autocapitalize="off" autocorrect="off"></div>
       <div class="field"><label for="sb-key">Supabase anon key</label><input class="input" id="sb-key" placeholder="eyJ…" autocapitalize="off" autocorrect="off"></div>
       <button class="btn primary block" id="sb-save" style="margin-top:16px">Connect</button>
     </div>
-    <div id="sb-auth" style="display:none">
-      <div class="field"><label for="a-email">Email</label><input class="input" id="a-email" type="email" autocapitalize="off" autocomplete="username"></div>
-      <div class="field"><label for="a-pass">Password</label><input class="input" id="a-pass" type="password" autocomplete="current-password"></div>
-      <button class="btn primary block" id="a-login" style="margin-top:16px"><span class="spin"></span><span class="lbl2">Sign in</span></button>
-    </div>
     <div id="sb-connected" style="display:none">
       <p class="note">Signed in as <b id="a-who"></b>. Orders sync live to every signed-in phone.</p>
-      <div class="actions"><button class="btn secondary" id="a-logout">Sign out</button><button class="btn danger" id="sb-disconnect">Disconnect</button></div>
+      <div class="actions"><button class="btn secondary" id="a-logout"><svg class="ic sm"><use href="#i-lock"/></svg>Sign out</button></div>
+      <p class="sub">Signing out removes the copy of your records kept on this phone.</p>
     </div>
   </div>
   <div class="card settings-list">
-    <div class="item"><div><div style="font-weight:700">Export orders</div><div class="d">Download every order as a CSV file</div></div><button class="btn secondary sm" id="export"><svg class="ic sm"><use href="#i-down"/></svg>CSV</button></div>
-    <div class="item" id="push-local" style="display:none"><div><div style="font-weight:700">Upload local orders</div><div class="d">Push orders saved on this phone to the cloud</div></div><button class="btn secondary sm" id="push-local-btn"><svg class="ic sm"><use href="#i-up"/></svg>Upload</button></div>
-    <div class="item"><div><div style="font-weight:700">Decorify Orders</div><div class="d">Version 4.0 · Atelier</div></div></div>
+    <div class="item"><div><div style="font-weight:700">Orders</div><div class="d">Every order with its payments and balance (CSV)</div></div><button class="btn secondary sm" data-export="orders"><svg class="ic sm"><use href="#i-down"/></svg>CSV</button></div>
+    <div class="item"><div><div style="font-weight:700">Payments</div><div class="d">Every payment, refund and correction (CSV)</div></div><button class="btn secondary sm" data-export="payments"><svg class="ic sm"><use href="#i-down"/></svg>CSV</button></div>
+    <div class="item"><div><div style="font-weight:700">Expenses</div><div class="d">Business expenses, stock and drawings (CSV)</div></div><button class="btn secondary sm" data-export="expenses"><svg class="ic sm"><use href="#i-down"/></svg>CSV</button></div>
+    <div class="item"><div><div style="font-weight:700">Customers</div><div class="d">Contact list with order totals (CSV)</div></div><button class="btn secondary sm" data-export="customers"><svg class="ic sm"><use href="#i-down"/></svg>CSV</button></div>
+    <div class="item"><div><div style="font-weight:700">Decorify Orders</div><div class="d">Version 6.0 · Atelier</div></div></div>
   </div>
   </div>
 </section>
@@ -900,8 +1137,8 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
   <button data-go="home" class="on"><svg class="ic"><use href="#i-home"/></svg>Home</button>
   <button data-go="orders"><svg class="ic"><use href="#i-list"/></svg>Orders</button>
   <span class="fabw"><button class="seal fab" data-go="new" aria-label="New order"><svg class="ic"><use href="#i-plus"/></svg></button></span>
+  <button data-go="customers"><svg class="ic"><use href="#i-users"/></svg>Clients</button>
   <button data-go="insights"><svg class="ic"><use href="#i-chart"/></svg>Insights</button>
-  <button data-go="products"><svg class="ic"><use href="#i-tag"/></svg>Products</button>
 </nav>
 
 <!-- order detail sheet -->
@@ -915,7 +1152,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
 <!-- product sheet -->
 <div class="sheet psheet" id="psheet" role="dialog" aria-modal="true" aria-labelledby="p-title">
   <div class="grab"></div>
-  <button class="ib close" id="p-close" aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button>
+  <button class="ib close" data-close="psheet" aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button>
   <form id="pform" novalidate autocomplete="off" class="body">
     <input type="hidden" id="p-id">
     <div class="lbl">Catalogue</div>
@@ -924,69 +1161,149 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
     <div class="field"><label for="p-name">Product name<span class="req">*</span></label><input class="input" id="p-name" placeholder="e.g. Wedding favour cone"><div class="hint" id="h-pname">Please enter a name</div></div>
     <div class="row2">
       <div class="field"><label for="p-price">Price per piece</label><div class="prefix"><span data-cur>Rs</span><input class="input num" id="p-price" type="number" inputmode="decimal" min="0" placeholder="0"></div></div>
-      <div class="field"><label for="p-cost">Cost per piece</label><div class="prefix"><span data-cur>Rs</span><input class="input num" id="p-cost" type="number" inputmode="decimal" min="0" placeholder="0"></div></div>
+      <div class="field"><label for="p-cost">Cost per piece</label><div class="prefix"><span data-cur>Rs</span><input class="input num" id="p-cost" type="number" inputmode="decimal" min="0" placeholder="Not known"></div></div>
     </div>
     <div class="actions"><button class="btn primary" type="submit" id="p-save"><span class="spin"></span><span class="lbl2">Save product</span></button><button class="btn danger" type="button" id="p-delete" style="display:none"><svg class="ic"><use href="#i-trash"/></svg>Delete</button></div>
   </form>
 </div>
 
-<!-- confirm dialog -->
-<div class="dialog" id="dialog" role="alertdialog" aria-modal="true"><h3 id="dg-title"></h3><p id="dg-text"></p><div class="row"><button class="btn secondary" id="dg-no">Cancel</button><button class="btn danger" id="dg-yes">Delete</button></div></div>
+<!-- payment sheet -->
+<div class="sheet fsheet" id="paysheet" role="dialog" aria-modal="true" aria-labelledby="pay-title">
+  <div class="grab"></div>
+  <button class="ib close" data-close="paysheet" aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button>
+  <form id="payform" novalidate autocomplete="off" class="body">
+    <div class="lbl" id="pay-who"></div>
+    <h3 id="pay-title">Record payment</h3>
+    <div class="seg" id="pay-kind" role="group" aria-label="Type"><button type="button" data-kind="payment" class="on">Payment received</button><button type="button" data-kind="refund">Refund given</button></div>
+    <div class="row2">
+      <div class="field"><label for="pay-amount">Amount<span class="req">*</span></label><div class="prefix"><span data-cur>Rs</span><input class="input num" id="pay-amount" type="number" inputmode="decimal" min="0" placeholder="0"></div><div class="hint" id="h-pay">Enter an amount above 0</div></div>
+      <div class="field"><label for="pay-date">Date</label><input class="input" id="pay-date" type="date"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label for="pay-method">Method</label><div class="selectwrap"><select id="pay-method"></select></div></div>
+      <div class="field"><label for="pay-ref">Reference</label><input class="input" id="pay-ref" placeholder="Txn ID (optional)"></div>
+    </div>
+    <div class="field"><label for="pay-note">Note</label><input class="input" id="pay-note" placeholder="Optional"></div>
+    <div class="calcline" id="pay-calc"></div>
+    <div class="form-err" id="pay-err" role="alert"><svg class="ic sm"><use href="#i-alert"/></svg><span id="pay-err-t"></span></div>
+    <div class="actions"><button class="btn primary" type="submit" id="pay-save"><span class="spin"></span><span class="lbl2">Save payment</span></button></div>
+  </form>
+</div>
+
+<!-- customer sheet -->
+<div class="sheet fsheet" id="csheet" role="dialog" aria-modal="true" aria-label="Customer">
+  <div class="grab"></div>
+  <button class="ib close" data-close="csheet" aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button>
+  <div id="csheet-body"></div>
+</div>
+
+<!-- expense sheet -->
+<div class="sheet fsheet" id="esheet" role="dialog" aria-modal="true" aria-labelledby="e-title">
+  <div class="grab"></div>
+  <button class="ib close" data-close="esheet" aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button>
+  <form id="eform" novalidate autocomplete="off" class="body">
+    <div class="lbl">Expenses</div>
+    <h3 id="e-title">Add expense</h3>
+    <div class="row2">
+      <div class="field"><label for="e-amount">Amount<span class="req">*</span></label><div class="prefix"><span data-cur>Rs</span><input class="input num" id="e-amount" type="number" inputmode="decimal" min="0" placeholder="0"></div><div class="hint" id="h-eamt">Enter an amount above 0</div></div>
+      <div class="field"><label for="e-date">Date</label><input class="input" id="e-date" type="date"></div>
+    </div>
+    <div class="field"><label for="e-cat">Type</label><div class="selectwrap"><select id="e-cat">
+      <optgroup label="Business expenses (reduce profit)">
+        <option value="packaging">Packaging supplies</option><option value="delivery">Delivery &amp; courier</option><option value="marketing">Marketing &amp; ads</option>
+        <option value="utilities">Utilities</option><option value="equipment">Tools &amp; equipment</option><option value="admin">Admin &amp; other costs</option><option value="other">Other business expense</option></optgroup>
+      <optgroup label="Not an expense (shown separately)">
+        <option value="stock">Stock / materials bought</option><option value="drawings">Owner drawings</option></optgroup>
+    </select></div><div class="sub" id="e-cat-s"></div></div>
+    <div class="field"><label for="e-desc">What was it?</label><input class="input" id="e-desc" placeholder="e.g. Ribbon rolls and gift boxes"></div>
+    <div class="field"><label for="e-method">Paid by</label><div class="selectwrap"><select id="e-method"></select></div></div>
+    <div class="form-err" id="e-err" role="alert"><svg class="ic sm"><use href="#i-alert"/></svg><span id="e-err-t"></span></div>
+    <div class="actions"><button class="btn primary" type="submit" id="e-save"><span class="spin"></span><span class="lbl2">Save expense</span></button><button class="btn danger" type="button" id="e-void" style="display:none">Void</button></div>
+  </form>
+</div>
+
+<!-- confirm / prompt dialog -->
+<div class="dialog" id="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dg-title"><h3 id="dg-title"></h3><p id="dg-text"></p>
+  <div class="field" id="dg-field" style="display:none;margin:-6px 0 16px"><input class="input" id="dg-input"></div>
+  <div class="row" id="dg-row"><button class="btn secondary" id="dg-no">Cancel</button><button class="btn danger" id="dg-yes">Delete</button></div></div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"><svg class="ic"><use href="#i-check"/></svg><span id="toast-text"></span></div>
 
 <script src="config.js"></script>
 <script src="insights-core.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="supabase-2.45.4.js"></script>
 <script>
 /* ======================================================================
-   STATE & HELPERS (business rules unchanged)
+   DECORIFY ORDERS v6 · STATE & HELPERS
    ====================================================================== */
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
-const LS = { orders:'ds_orders', products:'ds_products', cfg:'ds_cfg', set:'ds_settings', theme:'ds_theme' };
-const STATUS = {new:'New', in_progress:'In progress', ready:'Ready', delivered:'Delivered', cancelled:'Cancelled'};
+const DI = window.DSInsights;
+const LS = { orders:'ds_orders', products:'ds_products', customers:'ds_customers', payments:'ds_payments', expenses:'ds_expenses',
+  cfg:'ds_cfg', set:'ds_settings', theme:'ds_theme', drafts:'ds_drafts' };
+const DATA_KEYS = ['orders','products','customers','payments','expenses','drafts'];
 const LABEL = {new:'New', in_progress:'Making', ready:'Ready', delivered:'Delivered', cancelled:'Cancelled'};
 const NEXT = {new:'in_progress', in_progress:'ready', ready:'delivered'};
 const ORDER = ['new','in_progress','ready','delivered'];
-let orders = [], products = [], lines = [], filter='open', period='month', query='', current=null, saving=false, loading=false, selected=null, weekSel=null;
-let settings = Object.assign({currency:'Rs', name:''}, JSON.parse(localStorage.getItem(LS.set)||'{}'));
-let cfg = window.DS_CONFIG && window.DS_CONFIG.supabaseUrl ? {url:window.DS_CONFIG.supabaseUrl, key:window.DS_CONFIG.supabaseAnonKey, fixed:true}
-        : JSON.parse(localStorage.getItem(LS.cfg)||'null');
-let sb = null, user = null;
+const METHODS = ['Cash','Bank transfer','JazzCash','Easypaisa','Card','Other'];
+const ECAT = DI.EXPENSE_LABEL, EKIND = DI.EXPENSE_KIND;
+let orders = [], products = [], customers = [], payments = [], expenses = [], payBy = {};
+let lines = [], filter='open', period='month', query='', current=null, saving=false, loading=false, selected=null, weekSel=null, dateFilter=null;
+let settings = Object.assign({currency:'Rs', name:''}, readJSON(LS.set, {}));
+let cfg = window.DS_CONFIG && window.DS_CONFIG.supabaseUrl ? {url:window.DS_CONFIG.supabaseUrl, key:window.DS_CONFIG.supabaseAnonKey, fixed:true} : readJSON(LS.cfg, null);
+let sb = null, user = null, me = null, channel = null, schemaMissing = [], lastPull = 0, pullSeq = 0;
 
-const fmt = n => settings.currency + ' ' + Math.round(+n||0).toLocaleString('en-PK');
-const fmtN = n => Math.round(+n||0).toLocaleString('en-PK');
+function readJSON(k, d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}}
+function writeJSON(k, v){try{localStorage.setItem(k, JSON.stringify(v))}catch(e){}}
+const safeCur = s => String(s||'Rs').replace(/[<>&"'`]/g,'').trim().slice(0,4) || 'Rs';
+settings.currency = safeCur(settings.currency);
+const fmt = n => settings.currency + ' ' + (n<0?'−':'') + Math.abs(Math.round(+n||0)).toLocaleString('en-PK');
+const fmtN = n => (n<0?'−':'') + Math.abs(Math.round(+n||0)).toLocaleString('en-PK');
 const num = v => +(v||0);
+const blank = v => v===null || v===undefined || v==='';
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const today = () => ymd(new Date());
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c=='x'?r:(r&3|8)).toString(16)}));
-function profit(o){return num(o.sale_price)-num(o.cost)}
-function due(o){return Math.max(0,num(o.sale_price)-num(o.advance_paid))}
-function fmtDate(d,long){if(!d)return '';const x=new Date(d+'T00:00:00');return x.toLocaleDateString('en-GB',long?{weekday:'short',day:'numeric',month:'short',year:'numeric'}:{day:'numeric',month:'short'})}
-function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function fmtDate(d,long){if(!d)return '';const x=new Date(String(d).slice(0,10)+'T00:00:00');return x.toLocaleDateString('en-GB',long?{weekday:'short',day:'numeric',month:'short',year:'numeric'}:{day:'numeric',month:'short'})}
+function fmtWhen(ts){const d=new Date(ts);if(isNaN(d))return '';return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+', '+d.toLocaleTimeString('en-GB',{hour:'numeric',minute:'2-digit'})}
 function isOpen(o){return !['delivered','cancelled'].includes(o.status)}
 function isLate(o){return o.delivery_date && o.delivery_date<today() && isOpen(o)}
 function daysFrom(d){const t=new Date(today()+'T00:00:00'),x=new Date(d+'T00:00:00');return Math.round((x-t)/864e5)}
 function relDay(d){const n=daysFrom(d);return n===0?'Today':n===1?'Tomorrow':n<0?`${-n} day${n===-1?'':'s'} late`:n<7?`In ${n} days`:fmtDate(d)}
 function getLines(o){return Array.isArray(o.line_items)?o.line_items:[]}
-function lineTotals(ls){
-  const t={sale:0,cost:0,qty:0,hasCost:false};
-  for(const l of ls){const q=num(l.qty);t.qty+=q;t.sale+=q*num(l.price);if(num(l.cost)>0){t.hasCost=true;t.cost+=q*num(l.cost)}}
-  t.summary=ls.map(l=>`${num(l.qty)} × ${l.name}`).join(', ');
-  return t;
-}
-const ic = (id,c='') => `<svg class="ic ${c}"><use href="#${id}"/></svg>`;
-/* product icon chosen from words in its name (display only) */
+function costKnown(o){return !blank(o.cost)}
+function profitOf(o){return costKnown(o)?num(o.sale_price)-num(o.cost):null}
+function money(o){return DI.moneyOf(o, payBy[o.id])}
+function payPill(m){return m.status==='none'?'':`<span class="pay ${m.status}">${DI.PAY_LABEL[m.status]}</span>`}
+function custOf(o){return o.customer_id?customers.find(c=>c.id===o.customer_id):null}
+const ic = (id,c='') => `<svg class="ic ${c}" aria-hidden="true"><use href="#${id}"/></svg>`;
+const plural = (n,w,ws) => `${(+n).toLocaleString('en-PK')} ${n===1?w:(ws||w+'s')}`;
+function initials(n){return esc(String(n||'?').trim().charAt(0).toUpperCase()||'?')}
 function pIcon(name){const n=String(name||'').toLowerCase();
   if(/candle|wax|diya/.test(n))return 'i-candle'; if(/card|invit|envelope|stationer/.test(n))return 'i-card';
   if(/cone/.test(n))return 'i-cone'; if(/sticker|label|tag/.test(n))return 'i-sticker';
   if(/bangle|ring|jewel|chain/.test(n))return 'i-ring'; if(/box|pack|basket|hamper|bag|wrap/.test(n))return 'i-box';
   if(/favou?r|gift|keepsake/.test(n))return 'i-gift'; return 'i-sparkle'}
-let toastT; function toast(m,kind='ok'){const t=$('#toast');$('#toast-text').textContent=m;t.className='toast show '+kind;t.querySelector('use').setAttribute('href',kind==='ok'?'#i-check':'#i-alert');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2300)}
-function anySheet(){return $('#sheet').classList.contains('show')||$('#psheet').classList.contains('show')}
-function confirmDlg(title,text,yes='Delete'){return new Promise(res=>{$('#dg-title').textContent=title;$('#dg-text').textContent=text;$('#dg-yes').textContent=yes;$('#dialog').classList.add('show');$('#scrim').classList.add('show');
-  const done=v=>{$('#dialog').classList.remove('show');if(!anySheet())$('#scrim').classList.remove('show');$('#dg-yes').onclick=$('#dg-no').onclick=null;res(v)};
-  $('#dg-yes').onclick=()=>done(true);$('#dg-no').onclick=()=>done(false);setTimeout(()=>$('#dg-no').focus(),50)})}
+let toastT; function toast(m,kind='ok',ms){const t=$('#toast');$('#toast-text').textContent=m;t.className='toast show '+kind;t.querySelector('use').setAttribute('href',kind==='ok'?'#i-check':'#i-alert');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),ms||(kind==='ok'?2300:4200))}
+const SHEETS=['#sheet','#psheet','#paysheet','#csheet','#esheet'];
+function anySheet(){return SHEETS.some(s=>$(s).classList.contains('show'))}
+function openSheetEl(sel,focus){$(sel).classList.add('show');$('#scrim').classList.add('show');document.body.style.overflow='hidden';if(focus)setTimeout(()=>{const f=$(focus);if(f)f.focus()},90)}
+function closeSheetEl(sel){$(sel).classList.remove('show');if(sel==='#sheet')current=null;if(!anySheet()&&!$('#dialog').classList.contains('show')){$('#scrim').classList.remove('show');document.body.style.overflow=''}}
+function topSheet(){for(const s of ['#paysheet','#esheet','#psheet','#csheet','#sheet'])if($(s).classList.contains('show'))return s;return null}
+/* dialog: confirm, choice (several buttons) or prompt (text input) */
+function dlg({title,text,buttons,input}){return new Promise(res=>{
+  $('#dg-title').textContent=title;$('#dg-text').textContent=text||'';
+  const f=$('#dg-field'), inp=$('#dg-input'); f.style.display=input?'block':'none'; inp.value=''; inp.placeholder=input?.placeholder||'';
+  const row=$('#dg-row'); row.innerHTML=buttons.map((b,i)=>`<button class="btn ${b.cls||'secondary'}" data-i="${i}">${esc(b.label)}</button>`).join('');
+  row.style.flexWrap=buttons.length>2?'wrap':'nowrap';
+  $('#dialog').classList.add('show');$('#scrim').classList.add('show');
+  const done=v=>{$('#dialog').classList.remove('show');if(!anySheet())$('#scrim').classList.remove('show');row.onclick=null;res(v)};
+  row.onclick=e=>{const b=e.target.closest('[data-i]');if(!b)return;const def=buttons[+b.dataset.i];
+    if(input&&def.value!==null&&def.needsText&&!inp.value.trim()){inp.classList.add('err');inp.focus();return}
+    done(input&&def.value!==null?{value:def.value,text:inp.value.trim()}:def.value)};
+  dlg.cancel=()=>done(input?null:buttons.find(b=>b.cancel)?.value??null);
+  setTimeout(()=>{(input?inp:row.querySelector('[data-i]'))?.focus()},60)})}
+function confirmDlg(title,text,yes='Delete',cls='danger'){return dlg({title,text,buttons:[{label:'Cancel',value:false,cancel:true},{label:yes,value:true,cls}]})}
 
 /* ======================================================================
    THEME ENGINE: light / dark / system, persisted, no reload
@@ -1008,106 +1325,228 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-theme-set]
 $('#m-theme').onclick=()=>setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');
 
 /* ======================================================================
-   DATA LAYER (unchanged)
+   DATA LAYER
+   Cloud: Supabase (signed-in, approved users only). Every write reports
+   success only after the database confirms it. Local: only when no cloud
+   project is configured (used for testing).
    ====================================================================== */
-function loadLocal(){orders = JSON.parse(localStorage.getItem(LS.orders)||'[]');products = JSON.parse(localStorage.getItem(LS.products)||'[]')}
-function saveLocal(){localStorage.setItem(LS.orders, JSON.stringify(orders));localStorage.setItem(LS.products, JSON.stringify(products))}
+const TABLES = {orders:()=>orders, products:()=>products, customers:()=>customers, payments:()=>payments, expenses:()=>expenses};
+function setList(t,v){if(t==='orders')orders=v;else if(t==='products')products=v;else if(t==='customers')customers=v;else if(t==='payments')payments=v;else expenses=v}
+function reindex(){payBy={};for(const p of payments){if(p.voided_at)continue;(payBy[p.order_id]||(payBy[p.order_id]=[])).push(p)}}
+function allPaysFor(id){return payments.filter(p=>p.order_id===id).sort((a,b)=>(a.paid_on+a.created_at)<(b.paid_on+b.created_at)?-1:1)}
+function cacheSave(){for(const t of Object.keys(TABLES))writeJSON(LS[t], TABLES[t]())}
+function cacheLoad(){for(const t of Object.keys(TABLES))setList(t, readJSON(LS[t], []));orders=orders.filter(o=>!o.deleted_at);reindex()}
+function cacheClear(){for(const k of DATA_KEYS){try{localStorage.removeItem(LS[k])}catch(e){}} orders=[];products=[];customers=[];payments=[];expenses=[];payBy={}}
+function putRow(t,row){if(!row)return;const L=TABLES[t]();const i=L.findIndex(x=>x.id===row.id);
+  if(t==='orders'&&row.deleted_at){if(i>=0)L.splice(i,1);return}
+  if(i>=0){if(row.version!=null&&L[i].version!=null&&row.version<L[i].version)return;L[i]=row}else L.unshift(row)}
+function dropRow(t,id){const L=TABLES[t]();const i=L.findIndex(x=>x.id===id);if(i>=0)L.splice(i,1)}
+const isCloud = () => !!cfg;
+const online = () => navigator.onLine !== false;
+function friendly(error){
+  const m=String(error?.message||error||'');
+  if(!online()||/Failed to fetch|NetworkError|Load failed|network/i.test(m)) return 'No internet connection. Nothing was saved yet. Your entries are still here.';
+  if(/JWT|expired|refresh/i.test(m)) return 'Your sign-in has expired. Please sign in again; your entries are kept.';
+  if(error?.code==='42501'||/row-level security|permission denied/i.test(m)) return "This login isn't approved to change Decorify records.";
+  if(/cannot be changed|cannot be deleted|already voided|reason/i.test(m)) return m;
+  if(error?.code==='PGRST205'||/does not exist|Could not find the table/i.test(m)) return 'The database needs updating before this works (see setup notes).';
+  return 'Could not save: '+m;
+}
+function guard(){if(!isCloud())return null;if(!user)return 'Please sign in first. Nothing was saved yet.';if(!online())return "You're offline. Nothing was saved yet. Your entries are still here.";return null}
+const STRIP={orders:['created_at','created_by','updated_by','version','updated_at'],customers:['created_at','created_by','updated_by','version','updated_at'],expenses:['created_at','created_by','updated_by','version','updated_at']};
+function clean(t,o){const c={...o};(STRIP[t]||[]).forEach(k=>delete c[k]);return c}
+
+const DB = {
+  async insert(t,row){
+    const g=guard(); if(g) return {error:g};
+    if(!isCloud()){const r={...row,created_at:row.created_at||new Date().toISOString(),updated_at:new Date().toISOString(),version:1};putRow(t,r);reindex();cacheSave();return {row:r}}
+    try{
+      const {data,error}=await sb.from(t).insert(clean(t,row)).select().single();
+      if(error&&error.code==='23505'){const {data:d2}=await sb.from(t).select('*').eq('id',row.id).single();if(d2){putRow(t,d2);reindex();cacheSave();return {row:d2,duplicate:true}}}
+      if(error) return {error:friendly(error)};
+      putRow(t,data);reindex();cacheSave();return {row:data};
+    }catch(e){return {error:friendly(e)}}
+  },
+  /* update with a version check: if the row changed elsewhere, nothing is written and the latest copy is returned */
+  async update(t,id,patch,version){
+    const g=guard(); if(g) return {error:g};
+    if(!isCloud()){const L=TABLES[t]();const cur=L.find(x=>x.id===id);if(!cur)return {gone:true};if(version!=null&&cur.version!==version)return {conflict:true,row:cur};
+      const r={...cur,...patch,version:(cur.version||1)+1,updated_at:new Date().toISOString()};putRow(t,r);reindex();cacheSave();return {row:r}}
+    try{
+      let q=sb.from(t).update(clean(t,patch)).eq('id',id); if(version!=null) q=q.eq('version',version);
+      const {data,error}=await q.select();
+      if(error) return {error:friendly(error)};
+      if(data&&data.length){putRow(t,data[0]);reindex();cacheSave();return {row:data[0]}}
+      const {data:curr}=await sb.from(t).select('*').eq('id',id).maybeSingle();
+      if(!curr||curr.deleted_at) return {gone:true};
+      return {conflict:true,row:curr};
+    }catch(e){return {error:friendly(e)}}
+  },
+  async upsertProduct(p){const g=guard();if(g)return {error:g};
+    if(!isCloud()){putRow('products',p);cacheSave();return {row:p}}
+    try{const {data,error}=await sb.from('products').upsert(p).select().single();if(error)return {error:friendly(error)};putRow('products',data);cacheSave();return {row:data}}catch(e){return {error:friendly(e)}}},
+  async deleteProduct(id){const g=guard();if(g)return {error:g};
+    if(!isCloud()){dropRow('products',id);cacheSave();return {ok:true}}
+    try{const {error}=await sb.from('products').delete().eq('id',id);if(error)return {error:friendly(error)};dropRow('products',id);cacheSave();return {ok:true}}catch(e){return {error:friendly(e)}}},
+  async voidPayment(id,reason){
+    const g=guard(); if(g) return {error:g};
+    const patch={voided_at:new Date().toISOString(),void_reason:reason};
+    if(!isCloud()){const p=payments.find(x=>x.id===id);if(!p)return {gone:true};if(p.voided_at)return {error:'This payment is already voided.'};Object.assign(p,patch);reindex();cacheSave();return {row:p}}
+    try{const {data,error}=await sb.from('payments').update(patch).eq('id',id).select().single();if(error)return {error:friendly(error)};putRow('payments',data);reindex();cacheSave();return {row:data}}catch(e){return {error:friendly(e)}}
+  },
+  async history(id){
+    if(!isCloud()||!user||!online()) return null;
+    try{const {data,error}=await sb.from('audit_log').select('at,user_email,table_name,action,changes').eq('row_id',id).order('at',{ascending:false}).limit(12);return error?null:data}catch(e){return null}
+  },
+  async orderHistory(o){
+    if(!isCloud()||!user||!online()) return null;
+    const ids=[o.id,...payments.filter(p=>p.order_id===o.id).map(p=>p.id)];
+    try{const {data,error}=await sb.from('audit_log').select('at,user_email,table_name,action,changes').in('row_id',ids).order('at',{ascending:false}).limit(15);return error?null:data}catch(e){return null}
+  }
+};
+
+/* read every row of a table, page by page (never stops at the 1,000-row API limit) */
+async function fetchAll(t, build){
+  const out=[], size=1000;
+  for(let from=0;;from+=size){
+    let q=sb.from(t).select('*'); if(build) q=build(q); q=q.order('id').range(from, from+size-1);
+    const {data,error}=await q; if(error) throw Object.assign(error,{table:t});
+    out.push(...data); if(data.length<size) break;
+  }
+  return out;
+}
+async function pull(){
+  if(!sb||!user) return;
+  const seq=++pullSeq; setSync('wait','Syncing…');
+  const jobs={orders:q=>q.is('deleted_at',null), products:null, customers:q=>q.is('deleted_at',null), payments:null, expenses:null};
+  const res={}, missing=[]; let fail=null;
+  await Promise.all(Object.keys(jobs).map(async t=>{try{res[t]=await fetchAll(t,jobs[t])}catch(e){
+    if(e.code==='PGRST205'||e.code==='42P01'||/does not exist|Could not find the table|column .* does not exist/i.test(e.message||'')){missing.push(t);res[t]=t==='orders'?null:[]}
+    else fail=e}}));
+  if(seq!==pullSeq) return;          // a newer refresh started; ignore this older answer
+  loading=false;
+  if(fail){setSync('off',online()?'Sync error':'Offline');if(online())toast('Could not refresh: '+(fail.message||fail),'err');render();return}
+  if(res.orders===null){ // very old database without the new columns: read orders without the filter
+    try{res.orders=await fetchAll('orders')}catch(e){res.orders=[]}
+  }
+  for(const t of Object.keys(jobs)) setList(t,res[t]||[]);
+  schemaMissing=missing; reindex(); cacheSave(); lastPull=Date.now();
+  setSync('on','Live'); netbar(); render();
+  if(current){const o=orders.find(x=>x.id===current.id);o?fillSheet(o):closeSheetEl('#sheet')}
+}
+let renderT; function scheduleRender(){cancelAnimationFrame(renderT);renderT=requestAnimationFrame(()=>{render();if(current){const o=orders.find(x=>x.id===current.id);o?fillSheet(o):closeSheetEl('#sheet')}if($('#csheet').classList.contains('show')&&openCust)renderCustSheet()})}
+function subscribe(){
+  if(channel) return;
+  channel=sb.channel('decorify-live');
+  for(const t of Object.keys(TABLES)){
+    channel.on('postgres_changes',{event:'*',schema:'public',table:t},p=>{
+      if(p.eventType==='DELETE'){if(p.old&&p.old.id)dropRow(t,p.old.id)} else putRow(t,p.new);
+      if(t==='orders'||t==='customers'){const L=TABLES[t]();setList(t,L.filter(x=>!x.deleted_at))}
+      reindex(); cacheSave(); scheduleRender();
+    });
+  }
+  channel.subscribe(s=>{if(s==='SUBSCRIBED'){setSync('on','Live');pull()} else if(s==='CHANNEL_ERROR'||s==='TIMED_OUT'||s==='CLOSED'){setSync('off',online()?'Connecting':'Offline')}});
+}
+function unsubscribe(){if(channel&&sb){try{sb.removeChannel(channel)}catch(e){}}channel=null}
+
+/* ---------- auth ---------- */
 async function connect(){
-  if(!cfg||!cfg.url||!cfg.key||!window.supabase){setSync('off','Local');return}
-  sb = supabase.createClient(cfg.url, cfg.key);
+  if(!cfg){setSync('off','On this device');renderSettings();return}
+  if(!window.supabase){setSync('off','Offline');showGate('The app could not load its sync library. Check your connection and reopen the app.');return}
+  sb = supabase.createClient(cfg.url, cfg.key, {auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
   const {data:{session}} = await sb.auth.getSession();
   user = session?.user||null;
-  sb.auth.onAuthStateChange((_e,s)=>{user=s?.user||null;afterAuth()});
+  sb.auth.onAuthStateChange((ev,s)=>{
+    const was=user?.id; user=s?.user||null;
+    if(ev==='SIGNED_OUT'||!user){signedOut(false);return}
+    if(was!==user.id) afterAuth();
+  });
   afterAuth();
 }
 async function afterAuth(){
   renderSettings();
-  if(!user){setSync('wait','Sign in');return}
-  setSync('wait','Syncing…'); loading=!orders.length; render();
-  await pull();
-  sb.channel('orders-live').on('postgres_changes',{event:'*',schema:'public',table:'orders'},()=>pull())
-    .on('postgres_changes',{event:'*',schema:'public',table:'products'},()=>pull()).subscribe(s=>{if(s==='SUBSCRIBED')setSync('on','Live')});
+  if(!user){showGate();setSync('wait','Sign in');return}
+  // approval check (only meaningful once the database update has been run)
+  try{const {data,error}=await sb.from('app_users').select('email,role,display_name').eq('user_id',user.id);
+    if(!error){ if(!data.length){showGate("This login isn't approved for Decorify records. Ask Adeel to approve it.");cacheClear();render();return} me=data[0]; } }catch(e){}
+  hideGate(); setSync('wait','Syncing…'); loading=!orders.length; render();
+  await pull(); subscribe();
 }
-async function pull(){
-  const [{data,error},{data:pd,error:pe}] = await Promise.all([
-    sb.from('orders').select('*').order('created_at',{ascending:false}),
-    sb.from('products').select('*').order('name')]);
-  loading=false;
-  if(error){toast('Sync error: '+error.message,'err');setSync('off','Error');render();return}
-  orders = data; if(!pe) products = pd; else toast('Products: '+pe.message+' (run supabase-migration-2.sql)','err');
-  saveLocal(); render(); setSync('on','Live');
-  if(current){const o=orders.find(x=>x.id===current.id);o?fillSheet(o):closeSheet()}
+function signedOut(manual){
+  unsubscribe(); user=null; me=null; cacheClear(); current=null; selected=null;
+  SHEETS.forEach(s=>closeSheetEl(s)); render(); renderSettings(); showGate(); setSync('wait','Sign in');
+  if(manual) toast('Signed out. This phone no longer keeps a copy of your records.');
 }
-async function upsert(o){
-  if(sb&&user){
-    const {error} = await sb.from('orders').upsert(o);
-    if(error){toast('Save failed: '+error.message,'err');return false}
-    await pull();
-  } else {
-    const i=orders.findIndex(x=>x.id===o.id); i>=0?orders[i]=o:orders.unshift(o); saveLocal(); render();
-  }
-  return true;
-}
-async function remove(id){
-  if(sb&&user){const {error}=await sb.from('orders').delete().eq('id',id);if(error){toast(error.message,'err');return false} await pull()}
-  else {orders=orders.filter(o=>o.id!==id);saveLocal();render()}
-  return true;
-}
-async function upsertProduct(p){
-  if(sb&&user){const {error}=await sb.from('products').upsert(p);if(error){toast('Save failed: '+error.message,'err');return false}await pull()}
-  else {const i=products.findIndex(x=>x.id===p.id);i>=0?products[i]=p:products.push(p);saveLocal();render()}
-  return true;
-}
-async function removeProduct(id){
-  if(sb&&user){const {error}=await sb.from('products').delete().eq('id',id);if(error){toast(error.message,'err');return false}await pull()}
-  else {products=products.filter(p=>p.id!==id);saveLocal();render()}
-  return true;
-}
-function setSync(state,text){$$('[data-dot]').forEach(d=>d.className='dot '+(state==='on'?'on':state==='off'?'off':''));$$('[data-synctext]').forEach(t=>t.textContent=text)}
+function showGate(msg){if(!cfg)return;$('#gate').classList.add('show');const e=$('#gate-err');e.textContent=msg||'';e.classList.toggle('show',!!msg);document.body.style.overflow='hidden';setTimeout(()=>{if(!msg)$('#a-email').focus()},80)}
+function hideGate(){$('#gate').classList.remove('show');document.body.style.overflow=''}
+$('#gate-form').onsubmit=async e=>{e.preventDefault();const b=$('#a-login');if(b.classList.contains('loading'))return;
+  const email=$('#a-email').value.trim(), pass=$('#a-pass').value; const err=$('#gate-err');
+  if(!email||!pass){err.textContent='Enter the email and password of your Decorify account.';err.classList.add('show');return}
+  if(!online()){err.textContent="You're offline. Connect to the internet to sign in.";err.classList.add('show');return}
+  b.classList.add('loading'); err.classList.remove('show');
+  const {error}=await sb.auth.signInWithPassword({email,password:pass}); b.classList.remove('loading');
+  if(error){err.textContent=/invalid/i.test(error.message)?'That email and password don\'t match. Please try again.':error.message;err.classList.add('show');return}
+  $('#a-pass').value='';
+};
 
+/* ---------- connection banner ---------- */
+function netbar(){
+  const n=$('#netbar'), t=$('#netbar-t');
+  if(!online()&&isCloud()){n.className='netbar show';t.textContent="You're offline. Changes can't be saved to your shared account until you're back online. Order drafts stay on this phone.";return}
+  if(schemaMissing.length&&user){n.className='netbar show schema';t.textContent='Database update needed: run supabase-migration-3.sql in Supabase to turn on payments, customers and expenses.';return}
+  n.className='netbar';
+}
+addEventListener('online',()=>{netbar();setSync('wait','Syncing…');if(user)pull()});
+addEventListener('offline',()=>{netbar();setSync('off','Offline')});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&user&&online()&&Date.now()-lastPull>60000)pull()});
+function setSync(state,text){$$('[data-dot]').forEach(d=>d.className='dot '+(state==='on'?'on':state==='off'?'off':''));$$('[data-synctext]').forEach(t=>t.textContent=text)}
 /* ======================================================================
-   RENDERING
+   HOME
    ====================================================================== */
-function inPeriod(o){ if(period==='all')return true; const d=(o.order_date||o.created_at||'').slice(0,7); return d===today().slice(0,7) }
 function emptyState(icon,title,text,cta,big){return `<div class="empty ${big?'big':''}"><span class="em">${ic(icon)}</span><div class="tx"><h3>${title}</h3><p>${text}</p></div>${cta?`<button class="btn primary sm" data-go="new">${ic('i-plus','sm')}${cta}</button>`:''}</div>`}
-function renderChart(live){
-  const months=[]; const now=new Date(); for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push({key:ymd(d).slice(0,7),lbl:d.toLocaleDateString('en-GB',{month:'short'}),v:0})}
-  for(const o of live){const k=(o.order_date||o.created_at||'').slice(0,7);const m=months.find(x=>x.key===k);if(m)m.v+=profit(o)}
+function homeStats(){
+  const t=today(), p=period==='month'?DI.periodFor('this_month',t):DI.periodFor('all',t);
+  return DI.compute(orders,{today:t,period:p,payments});
+}
+function renderChart(){
+  const months=[]; const now=new Date();
+  for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push({key:ymd(d).slice(0,7),lbl:d.toLocaleDateString('en-GB',{month:'short'})})}
+  const live=orders.filter(o=>o.status!=='cancelled');
+  months.forEach(m=>{const a=DI.aggregate(live.filter(o=>(DI.orderDay(o)||'').slice(0,7)===m.key));m.v=a.profit!=null?a.profit:a.completeSubset.profit;m.inc=a.missingCostOrders>0;m.n=a.orders});
   const max=Math.max(1,...months.map(m=>Math.abs(m.v))); const any=months.some(m=>m.v!==0);
-  $('#chart').innerHTML = months.map((m,i)=>`<div class="${i===5?'cur':''} ${m.v<0?'neg':''}" title="${m.lbl}: ${fmt(m.v)}"><i style="height:${any?Math.max(3,Math.abs(m.v)/max*58):3}px"></i><span>${m.lbl}</span></div>`).join('')
-    + (any?'':`<div class="bars-empty">Profit by month appears here as orders come in</div>`);
+  $('#chart').innerHTML = months.map((m,i)=>`<div class="${i===5?'cur':''} ${m.v<0?'neg':''}" title="${m.lbl}: ${m.n?fmt(m.v)+(m.inc?' (some costs not entered)':''):'no orders'}"><i style="height:${any?Math.max(3,Math.abs(m.v)/max*58):3}px;${m.inc?'opacity:.55':''}"></i><span>${m.lbl}</span></div>`).join('')
+    + (any?'':`<div class="bars-empty">Order profit by month appears here as orders come in</div>`);
 }
 function renderHome(){
-  const live = orders.filter(o=>o.status!=='cancelled');
-  const p = live.filter(inPeriod);
-  const sales = p.reduce((a,o)=>a+num(o.sale_price),0), cost=p.reduce((a,o)=>a+num(o.cost),0);
-  const cur=esc(settings.currency);
-  $('#k-profit').innerHTML=`<small>${cur}</small>${fmtN(sales-cost)}`;
-  $('#k-profit-l').textContent = period==='month'?'Profit · this month':'Profit · all time';
-  $('#k-sales').textContent=fmt(sales); $('#k-sales2').innerHTML=`<small>${cur}</small>${fmtN(sales)}`; $('#k-cost').innerHTML=`<small>${cur}</small>${fmtN(cost)}`; $('#k-orders').textContent=p.length;
-  $('#k-margin').textContent = sales? Math.round((sales-cost)/sales*100)+'%':'0%';
-  $('#k-sales-s').textContent = period==='month'?'This month':'All time';
-  $('#k-orders-s').textContent = period==='month'?'Placed this month':'All orders';
-  const dueOrders = live.filter(o=>o.status!=='delivered'||due(o)>0);
-  $('#k-due').innerHTML=`<small>${cur}</small>${fmtN(dueOrders.reduce((a,o)=>a+due(o),0))}`;
-  const withDue=dueOrders.filter(o=>due(o)>0).length; $('#k-due-s').textContent = withDue?`Across ${withDue} order${withDue===1?'':'s'}`:'Nothing outstanding';
-  // greeting
+  const r=homeStats(), T=r.totals, R=r.receivables, cur=esc(settings.currency);
+  const shown = T.costComplete?T.profit:T.completeSubset.profit;
+  $('#k-profit').innerHTML=`<small>${cur}</small>${fmtN(shown||0)}`;
+  $('#k-profit-l').textContent = period==='month'?'Order profit · this month':'Order profit · all time';
+  $('#k-profit-s').innerHTML = !T.orders ? (period==='month'?'No orders yet this month':'No orders yet')
+    : T.costComplete ? `<b>${T.margin==null?'0':Math.round(T.margin)}%</b> margin on ${esc(fmt(T.sales))} in sales · before business expenses`
+    : `From <b>${T.completeSubset.orders} of ${T.orders}</b> orders · ${plural(T.missingCostOrders,'order')} still without a cost`;
+  $('#k-sales2').innerHTML=`<small>${cur}</small>${fmtN(T.sales)}`; $('#k-sales-s').textContent = period==='month'?'Booked this month':'All booked orders';
+  $('#k-cost').innerHTML=`<small>${cur}</small>${fmtN(T.costRecorded)}`;
+  $('#k-cost-s').textContent = T.missingCostOrders? `${plural(T.missingCostOrders,'order')} not costed yet` : 'Materials & delivery';
+  $('#k-orders').textContent=T.orders; $('#k-orders-s').textContent = period==='month'?'Placed this month':'All orders';
+  $('#k-due').innerHTML=`<small>${cur}</small>${fmtN(R.owed)}`;
+  $('#k-due-s').textContent = R.owedOrders? `Across ${plural(R.owedOrders,'order')}${R.credit?` · ${fmt(R.credit)} credit`:''}` : (R.credit?`${fmt(R.credit)} customer credit`:'Nothing outstanding');
   const h=new Date().getHours(), nm=(settings.name||'').trim();
   $('#greet').innerHTML=(h<12?'Good morning':h<17?'Good afternoon':'Good evening')+(nm?`, <em>${esc(nm)}</em>`:'');
   $('#hello-date').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
+  const live=orders.filter(o=>o.status!=='cancelled');
   const openN=orders.filter(isOpen).length, weekN=live.filter(o=>isOpen(o)&&o.delivery_date&&daysFrom(o.delivery_date)>=0&&daysFrom(o.delivery_date)<7).length;
   $('#hello-sub').textContent = openN? `${openN} order${openN===1?'':'s'} in the studio${weekN?` · ${weekN} deliver${weekN===1?'s':''} this week`:''}` : 'The studio is clear. Add an order to get started.';
-  renderChart(live);
-  // production board
+  renderChart();
+  const inP = o => period==='all' || (DI.orderDay(o)||'').slice(0,7)===today().slice(0,7);
   $('#board').innerHTML = loading? '<div class="skel" style="flex:1"></div>' : ORDER.map(s=>{
-    let os=orders.filter(o=>o.status===s && (s!=='delivered'||inPeriod(o)));
-    os.sort((a,b)=> s==='delivered' ? ((b.delivery_date||b.order_date||'')>(a.delivery_date||a.order_date||'')?1:-1) : ((a.delivery_date||'9999')<(b.delivery_date||'9999')?-1:1));
+    let os=orders.filter(o=>o.status===s && (s!=='delivered'||inP(o)));
+    os.sort((a,b)=> s==='delivered' ? ((b.delivered_on||b.delivery_date||'')>(a.delivered_on||a.delivery_date||'')?1:-1) : ((a.delivery_date||'9999')<(b.delivery_date||'9999')?-1:1));
     const shown=os.slice(0,4), more=os.length-shown.length;
     return `<div class="col st-${s}"><button class="col-h" data-q="${s}"><span class="wx">${os.length}</span><b>${LABEL[s]}</b><span class="amt num">${fmt(os.reduce((a,o)=>a+num(o.sale_price),0))}</span></button>
-      ${shown.length? shown.map(o=>`<button class="ochip" data-open="${o.id}"><b>${esc(o.customer_name)}</b><span>${esc(o.items)}</span><div class="ft"><span class="${isLate(o)?'late':''}">${s==='delivered'?(o.delivery_date?fmtDate(o.delivery_date):'Delivered'):(o.delivery_date?relDay(o.delivery_date):'No date')}</span><span class="num">${fmt(o.sale_price)}</span></div></button>`).join('')
+      ${shown.length? shown.map(o=>`<button class="ochip" data-open="${esc(o.id)}"><b>${esc(o.customer_name)}</b><span>${esc(o.items)}</span><div class="ft"><span class="${isLate(o)?'late':''}">${s==='delivered'?(o.delivered_on?fmtDate(o.delivered_on):'Delivered'):(o.delivery_date?relDay(o.delivery_date):'No date')}</span><span class="num">${fmt(o.sale_price)}</span></div></button>`).join('')
         : `<div class="empty-col">${s==='delivered'?(period==='month'?'None this month yet':'None yet'):'Nothing here'}</div>`}
       ${more>0?`<button class="more" data-q="${s}">+${more} more</button>`:''}</div>`}).join('');
-  // week strip
   const days=[...Array(7)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()+i);return ymd(d)});
   const openDated=live.filter(o=>isOpen(o)&&o.delivery_date);
   $('#week').innerHTML=days.map((d,i)=>{const k=openDated.filter(o=>o.delivery_date===d).length;const x=new Date(d+'T00:00:00');
@@ -1116,118 +1555,180 @@ function renderHome(){
   let up = openDated.slice().sort((a,b)=>a.delivery_date<b.delivery_date?-1:1);
   if(weekSel) up=up.filter(o=>o.delivery_date===weekSel); else up=up.slice(0,6);
   $('#upcoming').innerHTML = loading? '<div class="skel"></div><div class="skel"></div>' : up.length? up.map(o=>{const late=isLate(o),n=daysFrom(o.delivery_date),x=new Date(o.delivery_date+'T00:00:00');
-     return `<button class="dl st-${o.status}" data-open="${o.id}"><div class="when ${late?'late':''}"><b>${late?'Overdue':n===0?'Today':n===1?'Tomorrow':x.toLocaleDateString('en-GB',{weekday:'short'})+' '+x.getDate()}</b><span>${late?relDay(o.delivery_date):x.toLocaleDateString('en-GB',{month:'short'})}</span></div><div class="who"><b>${esc(o.customer_name)}</b><span>${esc(o.items)}</span></div><span class="pill">${LABEL[o.status]}</span></button>`}).join('')
+     return `<button class="dl st-${o.status}" data-open="${esc(o.id)}"><div class="when ${late?'late':''}"><b>${late?'Overdue':n===0?'Today':n===1?'Tomorrow':x.toLocaleDateString('en-GB',{weekday:'short'})+' '+x.getDate()}</b><span>${late?relDay(o.delivery_date):x.toLocaleDateString('en-GB',{month:'short'})}</span></div><div class="who"><b>${esc(o.customer_name)}</b><span>${esc(o.items)}</span></div><span class="pill">${LABEL[o.status]}</span></button>`}).join('')
     : emptyState('i-truck', weekSel?'Nothing that day':'Nothing scheduled', weekSel?'No open orders are due for delivery on this day.':'Orders with a delivery date line up here, soonest first.');
   // needs attention
-  const att = live.map(o=>{const r=isLate(o)?['cancelled','i-clock',`${relDay(o.delivery_date)} · ${LABEL[o.status].toLowerCase()}`]:(o.status==='delivered'&&due(o)>0)?['new','i-wallet','Delivered · payment pending']:o.status==='ready'?['ready','i-gift','Ready to deliver']:null;return r&&{o,k:r[0],i:r[1],why:r[2],rank:{cancelled:0,new:1,ready:2}[r[0]]}}).filter(Boolean).sort((a,b)=>a.rank-b.rank).slice(0,6);
+  const att=[];
+  for(const o of orders){
+    const m=money(o);
+    if(isLate(o)) att.push({o,k:'cancelled',i:'i-clock',why:`${relDay(o.delivery_date)} · ${LABEL[o.status].toLowerCase()}`,amt:fmt(o.sale_price),rank:0});
+    else if(o.status==='delivered'&&m.balance>0) att.push({o,k:'new',i:'i-wallet',why:'Delivered · payment still due',amt:fmt(m.balance),rank:1});
+    else if(o.status==='ready') att.push({o,k:'ready',i:'i-gift',why:'Ready to deliver',amt:fmt(o.sale_price),rank:2});
+    if(m.status==='credit') att.push({o,k:'ready',i:'i-undo',why:o.status==='cancelled'?'Cancelled · refund owed':'Overpaid · customer credit',amt:fmt(-m.balance),rank:1.5});
+    if(o.status!=='cancelled'&&!costKnown(o)&&num(o.sale_price)>0) att.push({o,k:'in_progress',i:'i-box',why:'Cost not entered yet',amt:'',rank:3});
+  }
+  att.sort((a,b)=>a.rank-b.rank); const attS=att.slice(0,7);
   $('#att-k').textContent = att.length? `${att.length} item${att.length===1?'':'s'}`:'';
-  $('#attention').innerHTML = loading? '<div class="skel"></div>' : att.length? att.map(a=>`<button class="tagx st-${a.k}" data-open="${a.o.id}"><span class="ti">${ic(a.i)}</span><div class="t"><b>${esc(a.o.customer_name)}</b><span>${a.why}</span></div><span class="a num">${a.k==='ready'?fmt(a.o.sale_price):fmt(due(a.o))}</span></button>`).join('')
-    : emptyState('i-check','All clear','Nothing overdue, unpaid or waiting to go out.');
+  $('#attention').innerHTML = loading? '<div class="skel"></div>' : attS.length? attS.map(a=>`<button class="tagx st-${a.k}" data-open="${esc(a.o.id)}"><span class="ti">${ic(a.i)}</span><div class="t"><b>${esc(a.o.customer_name)}</b><span>${a.why}</span></div><span class="a num">${a.amt}</span></button>`).join('')
+    : emptyState('i-check','All clear','Nothing overdue, unpaid, uncosted or waiting to go out.');
 }
+
+/* ======================================================================
+   ORDERS LIST
+   ====================================================================== */
 function orow(o){
-  const late=isLate(o);
-  const rd = o.delivery_date ? (o.status==='delivered'?'Delivered':relDay(o.delivery_date)) : '';
-  const when = o.delivery_date ? `${ic('i-truck')}${fmtDate(o.delivery_date)}${rd!==fmtDate(o.delivery_date)?' · '+rd:''}` : `${ic('i-cal')}No delivery date`;
-  return `<button class="orow st-${o.status} ${selected===o.id?'sel':''}" data-open="${o.id}"><b>${esc(o.customer_name)}</b><span class="am num">${fmt(o.sale_price)}</span>
-    <span class="i">${esc(o.items)}${!getLines(o).length&&o.quantity>1?' · ×'+o.quantity:''}</span>
-    <div class="m"><span class="pill">${LABEL[o.status]}</span><span class="${late?'late':''}">${when}</span><span class="r ${due(o)>0?'due':'paid'}">${due(o)>0?'Due '+fmt(due(o)):'Paid in full'}</span></div></button>`;
+  const late=isLate(o), m=money(o);
+  const rd = o.status==='delivered' ? (o.delivered_on?'Delivered '+fmtDate(o.delivered_on):'Delivered') : o.delivery_date ? relDay(o.delivery_date) : '';
+  const when = o.status==='delivered' ? `${ic('i-truck')}${rd}` : o.delivery_date ? `${ic('i-truck')}${fmtDate(o.delivery_date)}${rd!==fmtDate(o.delivery_date)?' · '+rd:''}` : `${ic('i-cal')}No delivery date`;
+  const payTxt = m.status==='credit'?`<span class="r credit">Credit ${fmt(-m.balance)}</span>` : m.balance>0?`<span class="r due">${m.status==='partly'?'Due':'Unpaid'} ${fmt(m.balance)}</span>` : m.status==='paid'?`<span class="r paid">Paid</span>`:'';
+  return `<button class="orow st-${o.status} ${selected===o.id?'sel':''}" data-open="${esc(o.id)}"><b>${esc(o.customer_name)}</b><span class="am num">${fmt(o.sale_price)}</span>
+    <span class="i">${esc(o.items)}${!getLines(o).length&&o.quantity>1?' · ×'+esc(o.quantity):''}</span>
+    <div class="m"><span class="pill">${LABEL[o.status]}</span><span class="${late?'late':''}">${when}</span>${payTxt}</div></button>`;
 }
+function orderMatches(o,q){if(!q)return true;const c=custOf(o);return [o.customer_name,o.items,o.phone,o.address,o.notes,c?.name,c?.phone,...getLines(o).map(l=>l.name)].join(' ').toLowerCase().includes(q)}
 function renderOrders(){
   const q=query.toLowerCase();
-  const match = o => !q || [o.customer_name,o.items,o.phone,o.address,o.notes,...getLines(o).map(l=>l.name)].join(' ').toLowerCase().includes(q);
-  const bySt = s => orders.filter(o=> s==='all'?true : s==='open'? isOpen(o) : o.status===s);
+  const bySt = s => orders.filter(o=> s==='all'?true : s==='open'? isOpen(o) : s==='due'? money(o).balance>0 : o.status===s);
   $$('#chips .chip').forEach(c=>{c.classList.toggle('on',c.dataset.s===filter);c.setAttribute('aria-selected',c.dataset.s===filter);c.querySelector('.n').textContent=bySt(c.dataset.s).length});
-  const inDates = o => !dateFilter || (()=>{const d=window.DSInsights?DSInsights.orderDay(o):(o.order_date||'');return d>=dateFilter.from&&d<=dateFilter.to})();
-  const rows = bySt(filter).filter(match).filter(inDates).sort((a,b)=>(a.delivery_date||'9999')<(b.delivery_date||'9999')?-1:1);
-  $('#dfilter').innerHTML = dateFilter? `<div class="dfilter"><span class="lbl">Order date</span><button class="chip" id="df-clear" aria-label="Clear date filter">${esc(dateFilter.label)} ${ic('i-x','xs')}</button></div>` : '';
+  const inDates = o => !dateFilter || (()=>{const d=(dateFilter.basis==='delivered'?DI.deliveredDay(o):DI.orderDay(o))||'';return d>=dateFilter.from&&d<=dateFilter.to})();
+  const rows = bySt(filter).filter(o=>orderMatches(o,q)).filter(inDates).sort((a,b)=>(a.delivery_date||'9999')<(b.delivery_date||'9999')?-1:1);
+  $('#dfilter').innerHTML = dateFilter? `<div class="dfilter"><span class="lbl">${dateFilter.basis==='delivered'?'Delivered':'Order date'}</span><button class="chip" id="df-clear" aria-label="Clear date filter">${esc(dateFilter.label)} ${ic('i-x','xs')}</button></div>` : '';
   const openN=orders.filter(isOpen).length, delN=orders.filter(o=>o.status==='delivered').length;
   $('#orders-sub').textContent = orders.length? `${openN} open · ${delN} delivered` : '';
   $('#list').innerHTML = loading? '<div class="skel"></div><div class="skel"></div><div class="skel"></div>' : rows.length? rows.map(orow).join('')
-    : q? emptyState('i-search','No matches',`Nothing found for “${esc(query)}”.`) : emptyState('i-gift', filter==='open'?'The order book is open':'Nothing here yet', filter==='open'?'Add the first order and it will appear here.':'Orders at this stage will appear here.', filter==='open'?'New order':null, true);
+    : q? emptyState('i-search','No matches',`Nothing found for “${esc(query)}”.`) : emptyState('i-gift', filter==='open'?'The order book is open':'Nothing here yet', filter==='open'?'Add the first order and it will appear here.':'Orders in this list will appear here.', filter==='open'?'New order':null, true);
   $('#searchwrap').classList.toggle('has',!!query);
   renderPanel();
 }
 function renderPanel(){
   const p=$('#dpanel'); if(!p) return;
   const o=orders.find(x=>x.id===selected);
-  p.innerHTML = o? `<div class="detail">${detailHTML(o)}</div>` : `<div class="dpanel-empty">${emptyState('i-list','Select an order','Its pieces, payment, delivery and personalisation open here.',null,true)}</div>`;
+  p.innerHTML = o? `<div class="detail">${detailHTML(o)}</div>` : `<div class="dpanel-empty">${emptyState('i-list','Select an order','Its pieces, payments, delivery and personalisation open here.',null,true)}</div>`;
+  if(o) loadActivity(o);
 }
-function renderProducts(){
-  const ps=[...products].sort((a,b)=>a.name.localeCompare(b.name));
-  $('#plist').innerHTML = ps.length? ps.map(p=>`<button class="pcard" data-prod="${p.id}"><span class="em">${ic(pIcon(p.name))}</span>
-      <div class="pn"><b>${esc(p.name)}</b><span>cost ${fmt(p.cost)} per piece</span></div><span class="pp num">${fmt(p.price)}</span>
-      ${num(p.price)?`<span class="pm">${Math.round((num(p.price)-num(p.cost))/num(p.price)*100)}%</span>`:''}</button>`).join('')
-    : emptyState('i-tag','No products yet','Save the pieces you sell with their usual price and cost. Adding them to an order then takes one tap.',null,true);
-  renderTiles();
-}
-function renderSettings(){
-  const note=$('#syncNote');
-  $('#sb-config').style.display = cfg? 'none':'block';
-  $('#sb-auth').style.display = cfg&&!user ? 'block':'none';
-  $('#sb-connected').style.display = cfg&&user ? 'block':'none';
-  $('#push-local').style.display = cfg&&user ? 'flex':'none';
-  if(!cfg) note.textContent='Orders are saved on this phone only. Connect a free Supabase project to share orders live between phones.';
-  else if(!user) note.textContent='Connected. Sign in with the account created in Supabase to start syncing.';
-  else {note.textContent='';$('#a-who').textContent=user.email}
-  if(cfg&&cfg.fixed)$('#sb-disconnect').style.display='none';
-  $('#set-cur').value=settings.currency; $('#set-name').value=settings.name||''; $$('[data-cur]').forEach(e=>e.textContent=settings.currency);
-}
-function render(){renderHome();renderOrders();renderProducts();if($('#s-insights').classList.contains('active'))renderInsights()}
 
 /* ======================================================================
    ORDER DETAIL (sheet on phone, side panel on wide screens)
    ====================================================================== */
 function kv(k,v,cls=''){return v===''||v==null?'':`<div class="kvr"><span>${k}</span><b class="${cls}">${v}</b></div>`}
+function costLine(o){
+  const ls=getLines(o);
+  const dc=num(o.delivery_cost);
+  const split = dc ? kv('Materials cost', costKnown(o)?fmt(num(o.cost)-dc):'<span style="color:var(--warning)">Not entered yet</span>','num')+kv('Delivery cost',fmt(dc),'num') : '';
+  if(costKnown(o)) return split+kv(dc?'Total direct cost':'Direct cost',fmt(o.cost),'num')+kv('Order profit',`<span style="color:${profitOf(o)<0?'var(--danger)':'inherit'}">${fmt(profitOf(o))}</span>`,'num');
+  if(dc) return split+kv('Order profit','<span style="color:var(--text-muted)">Not available until materials cost is entered</span>');
+  const s=ls.length?DI.linesSummary(ls):null;
+  const why = s&&s.anyCost ? `${plural(s.missingLines,'piece')} without a cost` : 'Cost not entered yet';
+  return kv('Direct cost',`<span style="color:var(--warning)">${why}</span>`)+kv('Order profit','<span style="color:var(--text-muted)">Not available yet</span>');
+}
 function detailHTML(o){
-  const idx=ORDER.indexOf(o.status), ls=getLines(o), nxt=NEXT[o.status];
-  const wa=o.phone?`https://wa.me/${o.phone.replace(/\D/g,'').replace(/^0/,'92')}`:'';
-  return `<div class="dh st-${o.status}"><div class="dh-top"><span class="pill">${LABEL[o.status]}</span></div><h3>${esc(o.customer_name)}</h3>
-      <div class="meta">Order ${o.id.slice(0,8).toUpperCase()} · placed ${fmtDate(o.order_date||o.created_at?.slice(0,10))}${o.source?' · '+esc(o.source):''}</div></div>
+  const idx=ORDER.indexOf(o.status), ls=getLines(o), nxt=NEXT[o.status], m=money(o), c=custOf(o);
+  const wa=o.phone?`https://wa.me/${String(o.phone).replace(/\D/g,'').replace(/^0/,'92')}`:'';
+  const pays=allPaysFor(o.id);
+  const pct = m.total>0? Math.max(0,Math.min(100, m.net/m.total*100)) : (m.net>0?100:0);
+  const bigCls = m.status==='credit'?'credit':m.balance>0?'due':'paid';
+  const bigLbl = m.status==='credit'?(o.status==='cancelled'?'Refund owed to customer':'Customer credit'):m.balance>0?'Balance due':'Paid in full';
+  const canPay = !(o.status==='cancelled'&&m.net<=0);
+  return `<div class="dh st-${o.status}"><div class="dh-top"><span class="pill">${LABEL[o.status]}</span>${payPill(m)}</div><h3>${esc(o.customer_name)}</h3>
+      <div class="meta">Order ${esc(o.id.slice(0,8).toUpperCase())} · placed ${fmtDate(o.order_date||o.created_at?.slice(0,10))}${o.source?' · '+esc(o.source):''}</div></div>
     <div class="stepper" role="group" aria-label="Order stage">${ORDER.map((s,i)=>`<button class="st-${s} ${o.status===s?'on':''} ${idx>i?'done':''}" data-st="${s}" aria-pressed="${o.status===s}"><i></i>${LABEL[s]}</button>`).join('')}</div>
     ${o.status==='cancelled'?`<div class="cx-note">This order is cancelled. Tap a stage above to reopen it.</div>`:''}
     ${o.notes?`<div class="dsec"><div class="card-note">${esc(o.notes)}</div></div>`:''}
-    <div class="dsec"><div class="lbl">Pieces</div>${ls.length? ls.map(l=>`<div class="kvr"><span>${num(l.qty)} × ${esc(l.name)} <span style="color:var(--text-muted);font-size:12px">@ ${fmt(l.price)}${num(l.cost)>0?' · cost '+fmt(l.cost):''}</span></span><b class="num">${fmt(num(l.qty)*num(l.price))}</b></div>`).join('') : kv('Items',esc(o.items))}${kv('Total pieces',o.quantity)}</div>
-    <div class="dsec"><div class="lbl">Payment</div>${kv('Sale price',fmt(o.sale_price),'num')}${kv('Cost',fmt(o.cost),'num')}${kv('Profit',fmt(profit(o)),'num')}${kv('Advance received',fmt(o.advance_paid),'num')}
-      <div class="kvr total"><span>Balance due</span><b class="num" style="color:${due(o)>0?'var(--warning)':'var(--success)'}">${due(o)>0?fmt(due(o)):'Paid in full'}</b></div></div>
-    <div class="dsec"><div class="lbl">Customer &amp; delivery</div>${kv('Phone',esc(o.phone))}${kv('Address',esc(o.address))}${kv('Delivery date',o.delivery_date?fmtDate(o.delivery_date,true)+(isLate(o)?' · <span style="color:var(--danger)">late</span>':''):'Not set')}</div>
-    <div class="d-actions">${nxt?`<button class="btn primary" data-next="${o.id}">${ic('i-check')}Mark ${LABEL[nxt]}</button>`:''}
-      ${wa?`<a class="btn secondary" href="${wa}" target="_blank" rel="noopener">${ic('i-chat')}WhatsApp</a>`:''}<button class="btn secondary" data-edit="${o.id}">${ic('i-edit')}Edit</button></div>`;
+    <div class="dsec"><div class="lbl">Payments</div>
+      <div class="money">
+        <div class="mr"><span>Order total</span><b class="num">${fmt(m.total)}</b></div>
+        <div class="mr"><span>Received${m.refunded?` (after ${fmt(m.refunded)} refunded)`:''}</span><b class="num">${fmt(m.net)}</b></div>
+        <div class="mr big ${bigCls}"><span>${bigLbl}</span><b class="num">${m.balance===0?'✓':fmt(Math.abs(m.balance))}</b></div>
+        ${m.total>0?`<div class="paybar" aria-hidden="true"><i style="width:${pct}%"></i></div>`:''}
+      </div>
+      <div class="payact">${canPay?`<button class="btn ${m.balance>0?'primary':'secondary'}" data-pay="${esc(o.id)}">${ic('i-in')}Record payment</button>`:''}${m.net>0?`<button class="btn secondary" data-refund="${esc(o.id)}">${ic('i-undo')}Refund</button>`:''}</div>
+      <div class="ph">${pays.length? pays.map(p=>`<div class="ph-row ${p.kind==='refund'?'refund':''} ${p.voided_at?'void':''}"><span class="pi">${ic(p.kind==='refund'?'i-undo':'i-in','sm')}</span>
+          <div class="pt"><b>${p.kind==='refund'?'Refund':'Payment'} · ${fmtDate(p.paid_on)}</b><span>${p.voided_at?'Voided: '+esc(p.void_reason||''):[esc(p.method||''),esc(p.reference||''),esc(p.note||'')].filter(Boolean).join(' · ')||'&nbsp;'}</span></div>
+          <span class="pa num">${p.kind==='refund'?'−':''}${fmt(p.amount)}</span>
+          ${p.voided_at?'':`<button class="more-b" data-paymenu="${esc(p.id)}" aria-label="Correct this payment">${ic('i-more','sm')}</button>`}</div>`).join('')
+        : `<div class="ph-empty">No payments recorded yet.</div>`}</div>
+    </div>
+    <div class="dsec"><div class="lbl">Pieces</div>${ls.length? ls.map(l=>`<div class="kvr"><span>${num(l.qty)} × ${esc(l.name)} <span style="color:var(--text-muted);font-size:12px">@ ${fmt(l.price)}${blank(l.cost)?' · <span style="color:var(--warning)">no cost</span>':' · cost '+fmt(l.cost)}</span></span><b class="num">${fmt(num(l.qty)*num(l.price))}</b></div>`).join('') : kv('Items',esc(o.items))}${kv('Total pieces',esc(o.quantity))}
+      <div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--border-strong)">${costLine(o)}</div></div>
+    <div class="dsec"><div class="lbl">Customer &amp; delivery</div>
+      ${c?kv('Customer',`<button class="link" data-cust="${esc(c.id)}" style="border:0;background:none;padding:0;color:var(--primary);font-weight:700">${esc(c.name)} →</button>`):''}
+      ${kv('Phone',esc(o.phone))}${kv('Address',esc(o.address))}
+      ${kv('Planned delivery',o.delivery_date?fmtDate(o.delivery_date,true)+(isLate(o)?' · <span style="color:var(--danger)">late</span>':''):'Not set')}
+      ${o.status==='delivered'?kv('Delivered on',o.delivered_on?fmtDate(o.delivered_on,true):'<span style="color:var(--text-muted)">Not recorded</span>'):''}</div>
+    ${isCloud()?`<div class="dsec"><div class="lbl">Activity</div><div class="activity" data-act="${esc(o.id)}"><span style="color:var(--text-muted)">Loading…</span></div></div>`:''}
+    <div class="d-actions">${nxt?`<button class="btn primary" data-next="${esc(o.id)}">${ic('i-check')}Mark ${LABEL[nxt]}</button>`:''}
+      ${wa?`<a class="btn secondary" href="${esc(wa)}" target="_blank" rel="noopener">${ic('i-chat')}WhatsApp</a>`:''}<button class="btn secondary" data-edit="${esc(o.id)}">${ic('i-edit')}Edit</button></div>`;
 }
-function fillSheet(o){current=o;$('#sheet-body').innerHTML=`<div class="detail">${detailHTML(o)}</div>`}
-function openSheet(o){fillSheet(o);$('#sheet').classList.add('show');$('#scrim').classList.add('show');document.body.style.overflow='hidden';setTimeout(()=>$('#d-close').focus(),60)}
-function closeSheet(){current=null;$('#sheet').classList.remove('show');if(!$('#psheet').classList.contains('show')&&!$('#dialog').classList.contains('show'))$('#scrim').classList.remove('show');document.body.style.overflow=''}
+const FIELD_NAMES={status:'stage',sale_price:'total',cost:'cost',customer_name:'name',phone:'phone',address:'address',delivery_date:'planned delivery',delivered_on:'delivery date',order_date:'order date',line_items:'pieces',notes:'notes',items:'pieces',quantity:'quantity',source:'lead source',customer_id:'customer link',deleted_at:'removed'};
+function describe(a){
+  const who=esc((a.user_email||'').split('@')[0]||'Someone'), when=fmtWhen(a.at), ch=a.changes||{};
+  let what;
+  if(a.table_name==='payments'){const amt=ch.amount!=null?fmt(ch.amount):'';what=a.action==='created'?`${ch.kind==='refund'?'Refund':'Payment'} of ${amt} recorded`:a.action==='voided'?`Payment voided${ch.void_reason?.to?': '+esc(ch.void_reason.to):''}`:'Payment changed'}
+  else if(a.action==='created') what='Order created';
+  else if(a.action==='status changed') what=`Moved to ${LABEL[ch.status?.to]||esc(ch.status?.to)}`;
+  else if(a.action==='removed') what='Order removed';
+  else what='Edited: '+Object.keys(ch).map(k=>FIELD_NAMES[k]).filter(Boolean).join(', ');
+  return `<div class="ar"><i></i><div><b>${what}</b><br><span>${who} · ${when}</span></div></div>`;
+}
+async function loadActivity(o){
+  const els=$$(`[data-act="${CSS.escape(o.id)}"]`); if(!els.length) return;
+  const h=await DB.orderHistory(o);
+  const html = h==null ? '<span style="color:var(--text-muted)">Available when online.</span>' : h.length? h.map(describe).join('') : '<span style="color:var(--text-muted)">No changes recorded yet.</span>';
+  $$(`[data-act="${CSS.escape(o.id)}"]`).forEach(e=>e.innerHTML=html);
+}
+function fillSheet(o){current=o;$('#sheet-body').innerHTML=`<div class="detail">${detailHTML(o)}</div>`;loadActivity(o)}
+function openSheet(o){fillSheet(o);openSheetEl('#sheet','#d-close')}
 function openOrder(id){
   const o=orders.find(x=>x.id===id); if(!o) return;
   if(matchMedia('(min-width:1100px)').matches && $('#s-orders').classList.contains('active')){selected=id;renderOrders()}
   else openSheet(o);
 }
-$('#d-close').onclick=closeSheet; $('#scrim').onclick=()=>{if($('#dialog').classList.contains('show'))return;if($('#psheet').classList.contains('show'))closeProduct();else closeSheet()};
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('#dialog').classList.contains('show'))$('#dg-no').click();else if($('#psheet').classList.contains('show'))closeProduct();else if(current)closeSheet()}
-  if(e.key==='/'&&!/input|textarea|select/i.test(document.activeElement.tagName)){e.preventDefault();go('orders');$('#q').focus()}});
-async function setStatus(o,s){if(o.status===s)return;const n={...o,status:s,updated_at:new Date().toISOString()};if(await upsert(n)){toast('Marked '+LABEL[s]);const fresh=orders.find(x=>x.id===o.id)||n;if(current)fillSheet(fresh);renderPanel()}}
+$('#d-close').onclick=()=>closeSheetEl('#sheet');
+$('#scrim').onclick=()=>{if($('#dialog').classList.contains('show'))return;const t=topSheet();if(t)closeSheetEl(t)};
+document.addEventListener('click',e=>{const c=e.target.closest('[data-close]');if(c)closeSheetEl('#'+c.dataset.close)});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('#dialog').classList.contains('show')){dlg.cancel&&dlg.cancel();return}const t=topSheet();if(t)closeSheetEl(t)}
+  if(e.key==='/'&&!/input|textarea|select/i.test(document.activeElement.tagName)&&!$('#gate').classList.contains('show')){e.preventDefault();go('orders');$('#q').focus()}});
 
+async function setStatus(o,s){
+  if(o.status===s)return;
+  const patch={status:s, delivered_on: s==='delivered' ? (o.delivered_on||today()) : null};
+  const r=await DB.update('orders',o.id,patch,null);
+  if(r.error){toast(r.error,'err');return}
+  if(r.gone){toast('This order was removed on another phone.','err');closeSheetEl('#sheet');render();return}
+  const fresh=r.row, m=money(fresh);
+  toast(s==='delivered'&&m.balance>0?`Marked Delivered · ${fmt(m.balance)} still to collect`:'Marked '+LABEL[s]);
+  render(); if(current)fillSheet(fresh);
+}
 /* ======================================================================
    NAVIGATION & DELEGATED EVENTS
    ====================================================================== */
 let from='home';
-function go(name){
-  if(name==='new'){openForm();name='form'}
+function go(name, opts){
+  if(name==='new'){openForm(null,opts);name='form'}
   if(name!=='form')from=name;
   $$('.screen').forEach(s=>s.classList.remove('active'));
   $$('[data-go]').forEach(b=>b.classList.toggle('on',b.dataset.go===name&&!!b.closest('nav')));
   $('#s-'+name).classList.add('active'); window.scrollTo({top:0});
   if(name==='orders') renderPanel();
   if(name==='insights') renderInsights();
+  if(name==='customers') renderCustomers();
+  if(name==='expenses') renderExpenses();
 }
 document.body.addEventListener('click',async e=>{
-  const g=e.target.closest('[data-go]'); if(g){go(g.dataset.go);return}
+  const g=e.target.closest('[data-go]'); if(g){closeSheetEl('#sheet');closeSheetEl('#csheet');go(g.dataset.go);return}
   const q=e.target.closest('[data-q]'); if(q){filter=q.dataset.q;renderOrders();go('orders');return}
   const st=e.target.closest('[data-st]'); if(st){const o=orders.find(x=>x.id===(current?.id||selected));if(o)setStatus(o,st.dataset.st);return}
   const nx=e.target.closest('[data-next]'); if(nx){const o=orders.find(x=>x.id===nx.dataset.next);if(o&&NEXT[o.status])setStatus(o,NEXT[o.status]);return}
-  const ed=e.target.closest('[data-edit]'); if(ed){const o=orders.find(x=>x.id===ed.dataset.edit);closeSheet();openForm(o);go('form');return}
-  const op=e.target.closest('[data-open]'); if(op){openOrder(op.dataset.open);return}
+  const ed=e.target.closest('[data-edit]'); if(ed){const o=orders.find(x=>x.id===ed.dataset.edit);closeSheetEl('#sheet');openForm(o);go('form');return}
+  const py=e.target.closest('[data-pay]'); if(py){openPay(py.dataset.pay,'payment');return}
+  const rf=e.target.closest('[data-refund]'); if(rf){openPay(rf.dataset.refund,'refund');return}
+  const pm=e.target.closest('[data-paymenu]'); if(pm){voidPaymentFlow(pm.dataset.paymenu);return}
+  const cu=e.target.closest('[data-cust]'); if(cu){openCustomer(cu.dataset.cust);return}
+  const op=e.target.closest('[data-open]'); if(op){closeSheetEl('#csheet');openOrder(op.dataset.open);return}
   const pr=e.target.closest('[data-prod]'); if(pr){const p=products.find(x=>x.id===pr.dataset.prod);if(p)openProduct(p);return}
+  const ex=e.target.closest('[data-exp]'); if(ex){const x=expenses.find(y=>y.id===ex.dataset.exp);if(x)openExpense(x);return}
   const wd=e.target.closest('[data-day]'); if(wd){weekSel=weekSel===wd.dataset.day?null:wd.dataset.day;renderHome();return}
+  const xp=e.target.closest('[data-export]'); if(xp){exportCSV(xp.dataset.export);return}
 });
 ['#period','#period-d'].forEach(id=>$(id).onclick=e=>{const b=e.target.closest('[data-p]');if(!b)return;period=b.dataset.p;$$('#period button,#period-d button').forEach(x=>x.classList.toggle('on',x.dataset.p===period));renderHome()});
 $('#chips').onclick=e=>{const c=e.target.closest('.chip');if(!c)return;filter=c.dataset.s;renderOrders()};
@@ -1238,24 +1739,79 @@ $('#m-search').onclick=()=>{go('orders');setTimeout(()=>$('#q').focus(),50)};
 $('#back').onclick=()=>go(from);
 
 /* ======================================================================
-   ORDER FORM (fields & rules unchanged)
+   ORDER FORM
+   Drafts are kept on this phone while typing, so closing the app or a
+   failed save never loses an order. They are removed once saved.
    ====================================================================== */
-const F = ['customer','phone','source','address','items','qty','status','sale','cost','advance','date','delivery','notes'];
-const MAP = {customer:'customer_name',qty:'quantity',sale:'sale_price',advance:'advance_paid',date:'order_date',delivery:'delivery_date'};
-function openForm(o){
-  $('#f-id').value=o?o.id:'';
+const F = ['customer','phone','source','address','items','qty','status','sale','cost','delcost','date','delivery','delivered','notes'];
+const MAP = {customer:'customer_name',qty:'quantity',sale:'sale_price',date:'order_date',delivery:'delivery_date',delivered:'delivered_on',delcost:'delivery_cost'};
+let form = null;   // {key, id, version, newId, advId, customerId}
+function methodOptions(sel){$(sel).innerHTML=METHODS.map(m=>`<option>${m}</option>`).join('')}
+methodOptions('#f-advmethod'); methodOptions('#pay-method'); methodOptions('#e-method');
+function drafts(){return readJSON(LS.drafts,{})}
+function saveDraft(){if(!form)return;const d=drafts();d[form.key]={ts:Date.now(),form:{...form},fields:Object.fromEntries(F.map(f=>[f,$('#f-'+f).value])),advance:$('#f-advance').value,advmethod:$('#f-advmethod').value,lines};writeJSON(LS.drafts,d)}
+function dropDraft(key){const d=drafts();delete d[key];writeJSON(LS.drafts,d)}
+let draftT; function draftSoon(){clearTimeout(draftT);draftT=setTimeout(saveDraft,350)}
+function openForm(o,opts={}){
+  const key=o?o.id:'new', d=drafts()[key];
+  form={key,id:o?o.id:null,version:o?o.version:null,newId:uid(),advId:uid(),customerId:o?o.customer_id||null:null};
   F.forEach(f=>{const k=MAP[f]||f;const el=$('#f-'+f);el.value=o?(o[k]??''):(f==='qty'?1:f==='date'?today():f==='status'?'new':f==='source'?'Instagram':'')});
-  lines = o? getLines(o).map(l=>({...l})) : [];
-  $('#legacy').style.display = (o && !lines.length) ? 'block':'none';
-  $('#delete').style.display=o?'flex':'none'; $('#f-customer').classList.remove('err');$('#h-customer').classList.remove('show');$('#h-items').classList.remove('show');
+  $('#f-advance').value=''; $('#f-advmethod').value='Cash';
+  if(o){const dc=num(o.delivery_cost);$('#f-delcost').value=dc?dc:'';if(!blank(o.cost)&&dc)$('#f-cost').value=Math.round((num(o.cost)-dc)*100)/100}
+  lines = o? getLines(o).map(l=>({...l,cost:blank(l.cost)?'':l.cost})) : [];
+  if(opts.customer){const c=opts.customer;$('#f-customer').value=c.name;$('#f-phone').value=c.phone||'';$('#f-address').value=c.address||'';form.customerId=c.id;$('#f-source').value='Repeat customer'}
+  let restored=false;
+  if(d && (!o || (d.form.version===o.version))){ // restore the draft (only if the order hasn't changed since)
+    Object.assign(form,{newId:d.form.newId||form.newId,advId:d.form.advId||form.advId,customerId:d.form.customerId??form.customerId});
+    F.forEach(f=>{if(d.fields[f]!==undefined)$('#f-'+f).value=d.fields[f]}); lines=d.lines||[]; $('#f-advance').value=d.advance||''; if(d.advmethod)$('#f-advmethod').value=d.advmethod; restored=true;
+  } else if(d && o){ dropDraft(key) }
+  $('#draft-note').classList.toggle('show',restored);
+  if(restored) $('#draft-t').textContent=`Restored your unsaved ${o?'changes':'order'} from ${fmtWhen(d.ts)}.`;
+  $('#legacy').style.display = (o && !lines.length && !getLines(o).length) ? 'block':'none';
+  $('#delete').style.display=o?'flex':'none';
+  $('#adv-new').style.display=o?'none':'block'; $('#adv-edit').style.display=o?'block':'none';
+  if(o){const m=money(o);$('#adv-edit').innerHTML=`Received so far: <b>${fmt(m.net)}</b> of ${fmt(m.total)}. Add payments from the order screen with <b>Record payment</b>.`}
+  ['#f-customer'].forEach(s=>$(s).classList.remove('err'));['#h-customer','#h-items'].forEach(s=>$(s).classList.remove('show'));
+  formError('');
   $('#form-eyebrow').textContent = o?'Edit order':'New order';
   $('#form-title').innerHTML = o?`${esc(o.customer_name)}`:'What are we <em>making?</em>';
-  renderLines(); stepSync();
+  $('#save').disabled=false; $('#save .lbl2').textContent='Save order';
+  renderLinkChip(); $('#cust-sug').classList.remove('show'); $('#phone-match').classList.remove('show');
+  renderLines(); stepSync(); deliveredField();
 }
+$('#draft-discard').onclick=async()=>{if(!form)return;if(!await confirmDlg('Discard these changes?','The unsaved entries in this form will be cleared.','Discard'))return;const key=form.key;dropDraft(key);const o=key==='new'?null:orders.find(x=>x.id===key);openForm(o)};
+function formError(msg){$('#form-err').classList.toggle('show',!!msg);$('#form-err-t').textContent=msg||''}
+function deliveredField(){const on=$('#f-status').value==='delivered';$('#fd-delivered').style.display=on?'block':'none';if(on&&!$('#f-delivered').value)$('#f-delivered').value=today()}
+$('#f-status').addEventListener('change',()=>{deliveredField();draftSoon()});
+$('#form').addEventListener('input',draftSoon);
+$('#form').addEventListener('change',draftSoon);
+/* --- customer picker --- */
+function renderLinkChip(){const c=form&&form.customerId?customers.find(x=>x.id===form.customerId):null;$('#cust-link').classList.toggle('show',!!c);if(c)$('#cust-link-t').textContent=`Linked to ${c.name}'s customer record`}
+function custMatches(q){q=q.trim().toLowerCase();if(q.length<2)return [];const dq=q.replace(/\D/g,'');
+  return customers.filter(c=>!c.deleted_at&&(String(c.name||'').toLowerCase().includes(q)||(dq.length>=4&&String(c.phone||'').replace(/\D/g,'').includes(dq)))).slice(0,6)}
+function custStats(id){const os=orders.filter(o=>o.customer_id===id&&o.status!=='cancelled');return {n:os.length,sales:os.reduce((a,o)=>a+num(o.sale_price),0)}}
+$('#f-customer').addEventListener('input',()=>{
+  $('#f-customer').classList.remove('err');$('#h-customer').classList.remove('show');
+  const list=custMatches($('#f-customer').value), box=$('#cust-sug');
+  if(form&&form.customerId){const c=customers.find(x=>x.id===form.customerId);if(c&&c.name!==$('#f-customer').value){/* keep the link; name on this order may differ */}}
+  box.innerHTML=list.map(c=>{const s=custStats(c.id);return `<button type="button" role="option" data-pick="${esc(c.id)}"><span class="av">${initials(c.name)}</span><span><b>${esc(c.name)}</b><span>${esc(c.phone||'No phone')} · ${plural(s.n,'order')}</span></span></button>`}).join('');
+  box.classList.toggle('show',!!list.length&&!form?.customerId);
+});
+$('#f-customer').addEventListener('blur',()=>setTimeout(()=>$('#cust-sug').classList.remove('show'),180));
+$('#cust-sug').addEventListener('mousedown',e=>e.preventDefault());
+$('#cust-sug').addEventListener('click',e=>{const b=e.target.closest('[data-pick]');if(b)pickCustomer(b.dataset.pick)});
+function pickCustomer(id){const c=customers.find(x=>x.id===id);if(!c)return;form.customerId=c.id;$('#f-customer').value=c.name;if(!$('#f-phone').value)$('#f-phone').value=c.phone||'';if(!$('#f-address').value)$('#f-address').value=c.address||'';
+  $('#cust-sug').classList.remove('show');$('#phone-match').classList.remove('show');renderLinkChip();draftSoon()}
+$('#cust-unlink').onclick=()=>{form.customerId=null;renderLinkChip();checkPhone();draftSoon()};
+function phoneOwner(){const k=DI.phoneKey($('#f-phone').value);if(!k)return null;return customers.find(c=>!c.deleted_at&&c.phone_key===k&&c.id!==form?.customerId)||null}
+function checkPhone(){const c=form&&!form.customerId?phoneOwner():null;$('#phone-match').classList.toggle('show',!!c);if(c){$('#phone-match-t').textContent=`This number belongs to ${c.name}. Use her customer record?`;$('#phone-match-use').dataset.id=c.id}}
+$('#f-phone').addEventListener('input',checkPhone);
+$('#phone-match-use').onclick=()=>pickCustomer($('#phone-match-use').dataset.id);
+/* --- pieces --- */
 function renderTiles(){
   const ps=[...products].sort((a,b)=>a.name.localeCompare(b.name));
   $('#ptiles').innerHTML = ps.map(p=>{const l=lines.find(x=>x.product_id===p.id);
-    return `<div class="prod ${l?'sel':''}" data-tile="${p.id}" role="button" tabindex="0" aria-label="Add ${esc(p.name)}">${l?`<span class="qty"><i data-dec="${p.id}" aria-label="Fewer">−</i><span class="num">${num(l.qty)}</span><i data-inc="${p.id}" aria-label="More">+</i></span>`:''}
+    return `<div class="prod ${l?'sel':''}" data-tile="${esc(p.id)}" role="button" tabindex="0" aria-label="Add ${esc(p.name)}">${l?`<span class="qty"><i data-dec="${esc(p.id)}" aria-label="Fewer">−</i><span class="num">${num(l.qty)}</span><i data-inc="${esc(p.id)}" aria-label="More">+</i></span>`:''}
       <span class="em">${ic(pIcon(p.name))}</span><b>${esc(p.name)}</b><span class="pr num">${fmt(p.price)}</span></div>`}).join('')
     + `<button type="button" class="prod custom" id="addcustom"><span class="em">${ic('i-plus')}</span><b style="font-size:13px">Custom piece</b><span class="pr">Type any item</span></button>`;
 }
@@ -1266,8 +1822,8 @@ function renderLines(){
     <div class="lh"><input class="input" data-k="name" value="${esc(l.name)}" placeholder="Item name" aria-label="Item name"><button class="ib" type="button" data-rm="${i}" aria-label="Remove item" style="width:38px;height:38px;flex:none">${ic('i-x','sm')}</button></div>
     <div class="lg">
       <div><label>Qty</label><input class="input num" data-k="qty" type="number" inputmode="numeric" min="1" value="${num(l.qty)||''}"></div>
-      <div><label>Price each</label><input class="input num" data-k="price" type="number" inputmode="decimal" min="0" value="${l.price??''}" placeholder="0"></div>
-      <div><label>Cost each</label><input class="input num" data-k="cost" type="number" inputmode="decimal" min="0" value="${l.cost||''}" placeholder="—"></div>
+      <div><label>Price each</label><input class="input num" data-k="price" type="number" inputmode="decimal" min="0" value="${esc(l.price??'')}" placeholder="0"></div>
+      <div><label>Cost each</label><input class="input num" data-k="cost" type="number" inputmode="decimal" min="0" value="${esc(blank(l.cost)?'':l.cost)}" placeholder="—"></div>
       <div class="lt-cell only-desk">Line total<b class="ltv num">${fmt(num(l.qty)*num(l.price))}</b></div>
     </div>
     <div class="lt"><span>Line total</span><b class="ltv num">${fmt(num(l.qty)*num(l.price))}</b></div>
@@ -1276,123 +1832,354 @@ function renderLines(){
 }
 $('#lines').addEventListener('input',e=>{const r=e.target.closest('.line');if(!r)return;const l=lines[+r.dataset.i];const k=e.target.dataset.k;l[k]=k==='name'?e.target.value:(e.target.value===''?'':+e.target.value);
   r.querySelectorAll('.ltv').forEach(b=>b.textContent=fmt(num(l.qty)*num(l.price)));$('#h-items').classList.remove('show');if(k==='qty')renderTiles();calc()});
-$('#lines').addEventListener('click',e=>{const b=e.target.closest('[data-rm]');if(b){lines.splice(+b.dataset.rm,1);renderLines()}});
-function addLine(l,focus=true){lines.push(l);$('#legacy').style.display='none';$('#h-items').classList.remove('show');renderLines();if(!focus)return;const r=$$('.line').pop();const f=r.querySelector(l.name?'[data-k=qty]':'[data-k=name]');f.focus({preventScroll:!l.name?false:true});if(l.name)f.select()}
-function addProduct(id){const p=products.find(x=>x.id===id);if(!p)return;const ex=lines.find(x=>x.product_id===id);if(ex){ex.qty=num(ex.qty)+1;renderLines();return}addLine({product_id:p.id,name:p.name,qty:1,price:num(p.price),cost:num(p.cost)||''},false)}
+$('#lines').addEventListener('click',e=>{const b=e.target.closest('[data-rm]');if(b){lines.splice(+b.dataset.rm,1);renderLines();draftSoon()}});
+function addLine(l,focus=true){lines.push(l);$('#legacy').style.display='none';$('#h-items').classList.remove('show');renderLines();draftSoon();if(!focus)return;const r=$$('.line').pop();const f=r.querySelector(l.name?'[data-k=qty]':'[data-k=name]');f.focus({preventScroll:!l.name?false:true});if(l.name)f.select()}
+function addProduct(id){const p=products.find(x=>x.id===id);if(!p)return;const ex=lines.find(x=>x.product_id===id);if(ex){ex.qty=num(ex.qty)+1;renderLines();draftSoon();return}addLine({product_id:p.id,name:p.name,qty:1,price:num(p.price),cost:blank(p.cost)?'':num(p.cost)},false)}
 $('#ptiles').addEventListener('click',e=>{
-  const inc=e.target.closest('[data-inc]'); if(inc){const l=lines.find(x=>x.product_id===inc.dataset.inc);if(l){l.qty=num(l.qty)+1;renderLines()}return}
-  const dec=e.target.closest('[data-dec]'); if(dec){const i=lines.findIndex(x=>x.product_id===dec.dataset.dec);if(i>=0){if(num(lines[i].qty)>1)lines[i].qty=num(lines[i].qty)-1;else lines.splice(i,1);renderLines()}return}
+  const inc=e.target.closest('[data-inc]'); if(inc){const l=lines.find(x=>x.product_id===inc.dataset.inc);if(l){l.qty=num(l.qty)+1;renderLines();draftSoon()}return}
+  const dec=e.target.closest('[data-dec]'); if(dec){const i=lines.findIndex(x=>x.product_id===dec.dataset.dec);if(i>=0){if(num(lines[i].qty)>1)lines[i].qty=num(lines[i].qty)-1;else lines.splice(i,1);renderLines();draftSoon()}return}
   if(e.target.closest('#addcustom')){addLine({name:'',qty:1,price:'',cost:''});return}
   const t=e.target.closest('[data-tile]'); if(t)addProduct(t.dataset.tile);
 });
 $('#ptiles').addEventListener('keydown',e=>{const t=e.target.closest('[data-tile]');if(t&&(e.key==='Enter'||e.key===' ')){e.preventDefault();addProduct(t.dataset.tile)}});
-function calc(){
-  const t=lineTotals(lines.filter(l=>l.name&&num(l.qty)>0)), sale=$('#f-sale'), cost=$('#f-cost');
-  if(lines.length){sale.value=t.sale;sale.readOnly=true;$('#s-sale').textContent='Total of the pieces above';
-    if(t.hasCost){cost.value=t.cost;cost.readOnly=true;$('#s-cost').textContent='Total of piece costs'} else {cost.readOnly=false;$('#s-cost').textContent='No piece costs given — enter the order total'}}
-  else {sale.readOnly=false;cost.readOnly=false;$('#s-sale').textContent='';$('#s-cost').textContent=''}
-  $('#c-total').textContent=fmt(sale.value);
-  $('#c-profit').textContent=fmt(num(sale.value)-num(cost.value));$('#c-due').textContent=fmt(Math.max(0,num(sale.value)-num($('#f-advance').value)));
+function cleanLines(){return lines.map(l=>({...(l.product_id?{product_id:l.product_id}:{}),name:String(l.name||'').trim(),qty:num(l.qty),price:num(l.price),cost:blank(l.cost)?null:num(l.cost)})).filter(l=>l.name&&l.qty>0)}
+function calcCost(cl){ // returns {cost (number|null), mode}
+  if(cl.length){const s=DI.linesSummary(cl);if(s.anyCost)return {cost:s.cost,mode:s.cost==null?'partial':'lines',s}}
+  const v=$('#f-cost').value; return {cost:v===''?null:num(v),mode:'typed'};
 }
-['f-sale','f-cost','f-advance'].forEach(i=>$('#'+i).oninput=calc);
-$('#f-customer').oninput=()=>{$('#f-customer').classList.remove('err');$('#h-customer').classList.remove('show')};
-/* step indicator follows scroll; tapping a step jumps to that section */
+function calc(){
+  const cl=cleanLines(), sale=$('#f-sale'), cost=$('#f-cost');
+  if(lines.length){const s=DI.linesSummary(cl);sale.value=s.sale;sale.readOnly=true;$('#s-sale').textContent='Total of the pieces above';
+    if(s.anyCost){cost.readOnly=true;cost.value=s.cost==null?'':s.cost;
+      $('#s-cost').innerHTML=s.cost==null?`<span class="warnline">${ic('i-alert')}Cost incomplete: ${plural(s.missingLines,'piece')} ${s.missingLines===1?'has':'have'} no cost. Add ${s.missingLines===1?'it':'them'}, or clear all piece costs and type one total.</span>`:'Total of piece costs'}
+    else {cost.readOnly=false;$('#s-cost').textContent='No piece costs given: type the order\'s total cost, or leave blank if not known yet.'}}
+  else {sale.readOnly=false;cost.readOnly=false;$('#s-sale').textContent='';$('#s-cost').textContent='Leave blank if not known yet. Type 0 if there is no cost.'}
+  const c=calcCost(cl), dlv=num($('#f-delcost').value), adv=form&&form.id?money(orders.find(o=>o.id===form.id)||{}).net:num($('#f-advance').value);
+  $('#c-total').textContent=fmt(sale.value);
+  $('#c-profit').textContent=c.cost==null?'—':fmt(num(sale.value)-c.cost-dlv);
+  const due=num(sale.value)-adv; $('#c-due').textContent=due<0?'Credit '+fmt(-due):fmt(due);
+}
+['f-sale','f-cost','f-delcost','f-advance'].forEach(i=>$('#'+i).addEventListener('input',calc));
 $('#steps').onclick=e=>{const b=e.target.closest('[data-step]');if(b)$('#'+b.dataset.step).scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})};
 function stepSync(){const ids=['fc-customer','fc-items','fc-pay','fc-del'];let cur=0;ids.forEach((id,i)=>{const r=$('#'+id).getBoundingClientRect();if(r.top<innerHeight*0.45)cur=i});
   $$('#steps button').forEach((b,i)=>{b.classList.toggle('on',i===cur);b.classList.toggle('done',i<cur)})}
 addEventListener('scroll',()=>{if($('#s-form').classList.contains('active'))stepSync()},{passive:true});
+function setSaving(btn,on,label){btn.classList.toggle('loading',on);btn.disabled=on;if(label)btn.querySelector('.lbl2').textContent=label}
+function flashOk(btn,label){btn.classList.add('ok-flash');const l=btn.querySelector('.lbl2'),old=l.textContent;l.textContent=label;setTimeout(()=>{btn.classList.remove('ok-flash');l.textContent=old},1100)}
+
 $('#form').onsubmit=async e=>{
-  e.preventDefault(); if(saving)return;
+  e.preventDefault(); if(saving||!form)return;
+  formError('');
   let ok=true; if(!$('#f-customer').value.trim()){ok=false;$('#f-customer').classList.add('err');$('#h-customer').classList.add('show')}
-  const clean=lines.map(l=>({...(l.product_id?{product_id:l.product_id}:{}),name:String(l.name||'').trim(),qty:num(l.qty),price:num(l.price),cost:num(l.cost)})).filter(l=>l.name&&l.qty>0);
-  const legacyOn=$('#legacy').style.display!=='none';
-  if(!clean.length && !(legacyOn && $('#f-items').value.trim())){ok=false;$('#h-items').classList.add('show')}
+  const cl=cleanLines(); const legacyOn=$('#legacy').style.display!=='none';
+  if(!cl.length && !(legacyOn && $('#f-items').value.trim())){ok=false;$('#h-items').classList.add('show')}
+  const adv=num($('#f-advance').value);
   if(!ok){toast('Please fill in the required fields','err');const f=$('.input.err')||$('#fc-items');f.scrollIntoView({block:'center'});if(f.focus)f.focus({preventScroll:true});return}
-  const id=$('#f-id').value||uid(), old=orders.find(o=>o.id===id)||{};
-  const o={id, created_at:old.created_at||new Date().toISOString(), updated_at:new Date().toISOString()};
-  F.forEach(f=>{const k=MAP[f]||f;let v=$('#f-'+f).value;if(['qty','sale','cost','advance'].includes(f))v=num(v);if(['date','delivery'].includes(f)&&!v)v=null;o[k]=typeof v==='string'?v.trim():v});
-  o.line_items=clean;
-  if(clean.length){const t=lineTotals(clean);o.items=t.summary;o.quantity=t.qty;o.sale_price=t.sale;if(t.hasCost)o.cost=t.cost}
-  saving=true; $('#save').classList.add('loading');
-  const done=await upsert(o);
-  saving=false; $('#save').classList.remove('loading');
-  if(done){toast(old.id?'Order updated':'Order saved');selected=o.id;go('orders')}
+  const g=guard(); if(g){formError(g);saveDraft();return}
+  saveDraft(); saving=true; setSaving($('#save'),true);
+  try{
+    // 1. customer: link to an existing record or create one (never merged by name)
+    if(!form.customerId && customers!==null && !schemaMissing.includes('customers')){
+      const owner=phoneOwner();
+      if(owner){const v=await dlg({title:'Same phone number',text:`${owner.name} already has this number. Is this order for her?`,buttons:[{label:'New customer',value:'new'},{label:`Yes, link to ${owner.name}`,value:'link',cls:'primary'}]});
+        if(v==='link')form.customerId=owner.id; else if(v==null){return}}
+      if(!form.customerId){
+        const c={id:form.cid||(form.cid=uid()),name:$('#f-customer').value.trim(),phone:$('#f-phone').value.trim()||null,phone_key:DI.phoneKey($('#f-phone').value),address:$('#f-address').value.trim()||null};
+        const r=await DB.insert('customers',c); if(r.error){formError(r.error);return} form.customerId=r.row.id; saveDraft();
+      }
+    } else if(form.customerId){ // fill gaps in the customer record (never overwrite what's there)
+      const c=customers.find(x=>x.id===form.customerId), ph=$('#f-phone').value.trim(), ad=$('#f-address').value.trim();
+      if(c&&((!c.phone&&ph)||(!c.address&&ad))) DB.update('customers',c.id,{...(!c.phone&&ph?{phone:ph,phone_key:DI.phoneKey(ph)}:{}),...(!c.address&&ad?{address:ad}:{})},c.version);
+    }
+    // 2. the order
+    const o={};
+    F.forEach(f=>{const k=MAP[f]||f;let v=$('#f-'+f).value;if(['qty','sale','delcost'].includes(f))v=num(v);if(['date','delivery','delivered'].includes(f)&&!v)v=null;if(f==='cost')return;o[k]=typeof v==='string'?v.trim():v});
+    o.line_items=cl; { const g=calcCost(cl).cost; o.cost = g==null ? null : Math.round((g+num(o.delivery_cost))*100)/100; } o.customer_id=form.customerId||null;
+    if(cl.length){const s=DI.linesSummary(cl);o.items=cl.map(l=>`${num(l.qty)} × ${l.name}`).join(', ');o.quantity=s.qty;o.sale_price=s.sale}
+    if(o.status!=='delivered') o.delivered_on=null; else if(!o.delivered_on) o.delivered_on=today();
+    let r;
+    if(!form.id){ r=await DB.insert('orders',{id:form.newId,...o}); }
+    else {
+      const cur=orders.find(x=>x.id===form.id)||{}; const patch={};
+      for(const k of Object.keys(o)) if(JSON.stringify(o[k]??null)!==JSON.stringify(cur[k]??null)) patch[k]=o[k];
+      if(!Object.keys(patch).length){dropDraft(form.key);toast('No changes to save');selected=form.id;go('orders');return}
+      r=await DB.update('orders',form.id,patch,form.version);
+      if(r.conflict){
+        const who=(r.row.updated_by&&r.row.updated_by!==user?.id)?'Someone on another phone':'Another phone';
+        const v=await dlg({title:'Changed on another phone',text:`${who} saved changes to this order${r.row.updated_at?' at '+fmtWhen(r.row.updated_at):''}. Your edits are still in the form.`,
+          buttons:[{label:'Cancel',value:null,cancel:true},{label:'Load their version',value:'theirs'},{label:'Save mine over it',value:'mine',cls:'primary'}]});
+        if(v==='theirs'){dropDraft(form.key);putRow('orders',r.row);openForm(r.row);toast('Loaded the latest version');return}
+        if(v!=='mine') return;
+        const p2={};for(const k of Object.keys(o)) if(JSON.stringify(o[k]??null)!==JSON.stringify(r.row[k]??null)) p2[k]=o[k];
+        r=await DB.update('orders',form.id,p2,r.row.version);
+      }
+      if(r.gone){formError('This order was removed on another phone. Your entries are kept as a draft.');return}
+    }
+    if(r.error){formError(r.error);return}
+    const saved=r.row;
+    // 3. advance payment for a new order
+    let advErr=null;
+    if(!form.id && adv>0){const pr=await DB.insert('payments',{id:form.advId,order_id:saved.id,kind:'payment',amount:adv,paid_on:saved.order_date||today(),method:$('#f-advmethod').value,note:'Advance'});if(pr.error)advErr=pr.error}
+    dropDraft(form.key);
+    flashOk($('#save'),'Saved');
+    if(advErr) toast("Order saved, but the advance wasn't recorded: "+advErr+' Open the order and tap Record payment.','err',7000);
+    else toast(isCloud()?(form.id?'Changes saved to your shared account':'Order saved to your shared account'):(form.id?'Order updated':'Order saved'));
+    selected=saved.id; const wasNew=!form.id; form=null; render(); go('orders');
+    if(!matchMedia('(min-width:1100px)').matches&&wasNew) openOrder(saved.id);
+  } finally { saving=false; setSaving($('#save'),false) }
 };
-$('#delete').onclick=async()=>{if(await confirmDlg('Delete this order?','This removes the order permanently. This cannot be undone.')){const id=$('#f-id').value;if(await remove(id)){if(selected===id)selected=null;toast('Order deleted');go('orders')}}};
+$('#delete').onclick=async()=>{
+  if(!form||!form.id)return; const o=orders.find(x=>x.id===form.id); if(!o)return;
+  if((payBy[o.id]||[]).length){await dlg({title:"Can't remove this order",text:'It has payments recorded. Cancel the order instead (set the stage to Cancelled), and record a refund if money was returned.',buttons:[{label:'OK',value:true,cls:'primary'}]});return}
+  if(!await confirmDlg('Remove this order?','It disappears from lists and reports. The record is kept in the change log.','Remove'))return;
+  const r=await DB.update('orders',o.id,{deleted_at:new Date().toISOString()},null);
+  if(r.error){toast(r.error,'err');return}
+  if(!isCloud()){dropRow('orders',o.id);cacheSave()}
+  dropDraft(o.id); if(selected===o.id)selected=null; form=null; toast('Order removed'); render(); go('orders');
+};
+
+/* ======================================================================
+   PAYMENTS
+   ====================================================================== */
+let pay=null;
+function openPay(orderId,kind){
+  const o=orders.find(x=>x.id===orderId); if(!o) return; const m=money(o);
+  pay={orderId,kind,id:uid()};
+  $('#pay-who').textContent=o.customer_name; setPayKind(kind);
+  $('#pay-amount').value = kind==='refund' ? (m.balance<0?-m.balance:'') : (m.balance>0?m.balance:'');
+  $('#pay-date').value=today(); $('#pay-method').value='Cash'; $('#pay-ref').value=''; $('#pay-note').value='';
+  $('#h-pay').classList.remove('show'); $('#pay-err').classList.remove('show'); $('#pay-save').disabled=false;
+  payCalc(); openSheetEl('#paysheet','#pay-amount');
+}
+function setPayKind(k){pay.kind=k;$$('#pay-kind button').forEach(b=>b.classList.toggle('on',b.dataset.kind===k));$('#pay-title').textContent=k==='refund'?'Record refund':'Record payment';$('#pay-save .lbl2').textContent=k==='refund'?'Save refund':'Save payment';payCalc()}
+$('#pay-kind').onclick=e=>{const b=e.target.closest('[data-kind]');if(b&&pay){setPayKind(b.dataset.kind);pay.id=uid()}};
+function payCalc(){
+  const o=orders.find(x=>x.id===pay?.orderId); if(!o) return; const m=money(o), a=num($('#pay-amount').value)*(pay.kind==='refund'?-1:1), after=m.balance-a;
+  $('#pay-calc').innerHTML=`Balance now <b>${m.balance<0?'credit '+fmt(-m.balance):fmt(m.balance)}</b> → after this <b>${after<0?'credit '+fmt(-after):after===0?'paid in full':fmt(after)}</b>`
+    + (after<0&&pay.kind==='payment'?`<div class="warnline">${ic('i-alert')}This is more than the balance. The extra ${fmt(-after)} will show as customer credit.</div>`:'')
+    + (pay.kind==='refund'&&a<0&&-a>m.net?`<div class="warnline">${ic('i-alert')}This refund is more than the ${fmt(m.net)} received.</div>`:'');
+}
+$('#pay-amount').addEventListener('input',()=>{$('#h-pay').classList.remove('show');payCalc()});
+$('#payform').onsubmit=async e=>{
+  e.preventDefault(); if(!pay||$('#pay-save').disabled) return;
+  const amt=num($('#pay-amount').value); if(!(amt>0)){$('#h-pay').classList.add('show');$('#pay-amount').focus();return}
+  setSaving($('#pay-save'),true); $('#pay-err').classList.remove('show');
+  const r=await DB.insert('payments',{id:pay.id,order_id:pay.orderId,kind:pay.kind,amount:amt,paid_on:$('#pay-date').value||today(),method:$('#pay-method').value,reference:$('#pay-ref').value.trim()||null,note:$('#pay-note').value.trim()||null});
+  setSaving($('#pay-save'),false);
+  if(r.error){$('#pay-err-t').textContent=r.error;$('#pay-err').classList.add('show');return}  // same id is kept: retrying can't record it twice
+  const o=orders.find(x=>x.id===pay.orderId), m=money(o);
+  toast(`${pay.kind==='refund'?'Refund':'Payment'} of ${fmt(amt)} saved${m.balance===0?' · paid in full':m.balance>0?' · '+fmt(m.balance)+' still due':''}`);
+  closeSheetEl('#paysheet'); pay=null; render(); if(current)fillSheet(o);
+};
+async function voidPaymentFlow(pid){
+  const p=payments.find(x=>x.id===pid); if(!p) return;
+  const v=await dlg({title:'Correct this payment?',text:`${p.kind==='refund'?'Refund':'Payment'} of ${fmt(p.amount)} on ${fmtDate(p.paid_on)}. Voiding keeps it in the history, crossed out, and removes it from the balance. Then record the correct amount.`,
+    input:{placeholder:'Reason, e.g. entered twice'},buttons:[{label:'Keep it',value:null},{label:'Void payment',value:'void',cls:'danger',needsText:true}]});
+  if(!v||!v.value) return;
+  const r=await DB.voidPayment(pid,v.text); if(r.error){toast(r.error,'err');return}
+  toast('Payment voided'); render(); const o=orders.find(x=>x.id===p.order_id); if(current&&o)fillSheet(o);
+}
+
+/* ======================================================================
+   CUSTOMERS
+   ====================================================================== */
+let cfilter='all', cquery='', openCust=null, custEdit=false;
+function custView(){
+  const by={}; for(const o of orders){if(!o.customer_id)continue;(by[o.customer_id]||(by[o.customer_id]=[])).push(o)}
+  return customers.filter(c=>!c.deleted_at).map(c=>{const os=(by[c.id]||[]), live=os.filter(o=>o.status!=='cancelled');
+    const sales=live.reduce((a,o)=>a+num(o.sale_price),0), bal=os.reduce((a,o)=>a+money(o).balance,0);
+    const last=os.reduce((m,o)=>{const d=DI.orderDay(o)||'';return d>m?d:m},'');
+    return {c,orders:os,n:live.length,sales,aov:live.length?sales/live.length:null,balance:bal,last}}).sort((a,b)=>(b.last||'').localeCompare(a.last||'')||a.c.name.localeCompare(b.c.name));
+}
+function renderCustomers(){
+  const all=custView(), q=cquery.trim().toLowerCase(), dq=q.replace(/\D/g,'');
+  const f={all:x=>true,owing:x=>x.balance>0,repeat:x=>x.n>=2};
+  $$('#cchips .chip').forEach(c=>{c.classList.toggle('on',c.dataset.c===cfilter);c.querySelector('.n').textContent=all.filter(f[c.dataset.c]).length});
+  const rows=all.filter(f[cfilter]).filter(x=>!q||x.c.name.toLowerCase().includes(q)||(dq.length>=3&&String(x.c.phone||'').replace(/\D/g,'').includes(dq)));
+  $('#cust-sub').textContent=all.length?`${plural(all.length,'customer')} · ${all.filter(x=>x.n>=2).length} repeat`:'';
+  $('#clist').innerHTML = loading?'<div class="skel"></div><div class="skel"></div>' : rows.length? rows.map(x=>`<button class="ccard" data-cust="${esc(x.c.id)}"><span class="av">${initials(x.c.name)}</span>
+      <span class="cn"><b>${esc(x.c.name)}${x.n>=2?'<span class="rep">Repeat</span>':''}</b><span>${esc(x.c.phone||'No phone')} · ${plural(x.n,'order')}${x.last?' · last '+fmtDate(x.last):''}</span></span>
+      <span class="cr"><b class="num">${fmt(x.sales)}</b><span class="${x.balance>0?'due':x.balance<0?'credit':'muted'}">${x.balance>0?'Owes '+fmt(x.balance):x.balance<0?'Credit '+fmt(-x.balance):'Settled'}</span></span></button>`).join('')
+    : emptyState('i-users', q?'No matches':'No customers yet', q?`Nothing found for “${esc(cquery)}”.`:'Customers are added automatically when you save an order, or add one here.');
+}
+$('#cq').oninput=e=>{cquery=e.target.value;renderCustomers()};
+$('#cchips').onclick=e=>{const c=e.target.closest('[data-c]');if(c){cfilter=c.dataset.c;renderCustomers()}};
+$('#c-new').onclick=$('#c-new-d').onclick=()=>{openCust='new';custEdit=true;renderCustSheet();openSheetEl('#csheet','#c-name')};
+function openCustomer(id){openCust=id;custEdit=false;renderCustSheet();openSheetEl('#csheet')}
+function renderCustSheet(){
+  const isNew=openCust==='new', x=isNew?null:custView().find(v=>v.c.id===openCust), c=x?.c||{name:'',phone:'',address:'',notes:''};
+  if(!isNew&&!x){closeSheetEl('#csheet');return}
+  const wa=c.phone?`https://wa.me/${String(c.phone).replace(/\D/g,'').replace(/^0/,'92')}`:'';
+  const body = custEdit ? `<form id="cform" class="body" novalidate autocomplete="off"><div class="lbl">Customer</div><h3>${isNew?'New customer':'Edit details'}</h3>
+      <div class="field"><label for="c-name">Name<span class="req">*</span></label><input class="input" id="c-name" value="${esc(c.name)}"><div class="hint" id="h-cname">Please enter a name</div></div>
+      <div class="field"><label for="c-phone">Phone / WhatsApp</label><input class="input" id="c-phone" inputmode="tel" value="${esc(c.phone||'')}"></div>
+      <div class="field"><label for="c-address">Usual address</label><textarea id="c-address">${esc(c.address||'')}</textarea><div class="sub">Past orders keep the address they were delivered to.</div></div>
+      <div class="field"><label for="c-notes">Notes</label><textarea id="c-notes" placeholder="Preferences, family event dates…">${esc(c.notes||'')}</textarea></div>
+      <div class="form-err" id="c-err"><svg class="ic sm"><use href="#i-alert"/></svg><span id="c-err-t"></span></div>
+      <div class="actions"><button class="btn primary" type="submit" id="c-save"><span class="spin"></span><span class="lbl2">Save customer</span></button>${isNew?'':'<button class="btn secondary" type="button" id="c-cancel">Cancel</button>'}</div></form>`
+    : `<div class="body"><div class="lbl">Customer</div><h3>${esc(c.name)}${x.n>=2?' <span class="rep">Repeat customer</span>':''}</h3>
+      <p class="note" style="margin:0 0 14px">${esc(c.phone||'No phone')}${c.address?' · '+esc(c.address):''}</p>
+      <div class="cstats"><div>Orders<b>${x.n}</b></div><div>Sales<b class="num">${fmt(x.sales)}</b></div><div>Average order<b class="num">${x.aov==null?'—':fmt(x.aov)}</b></div><div>Balance<b class="num" style="color:${x.balance>0?'var(--warning)':x.balance<0?'var(--s-rd)':'inherit'}">${x.balance>0?fmt(x.balance):x.balance<0?'Credit '+fmt(-x.balance):'Settled'}</b></div></div>
+      ${c.notes?`<div class="card-note" style="margin-top:12px">${esc(c.notes)}</div>`:''}
+      <div class="actions"><button class="btn primary" id="c-order">${ic('i-plus')}New order</button>${wa?`<a class="btn secondary" href="${esc(wa)}" target="_blank" rel="noopener">${ic('i-chat')}WhatsApp</a>`:''}<button class="btn secondary" id="c-edit">${ic('i-edit')}Edit</button></div>
+      <div class="lbl" style="margin:22px 0 8px">Order history</div>${x.orders.length?x.orders.slice().sort((a,b)=>(DI.orderDay(b)||'').localeCompare(DI.orderDay(a)||'')).map(orow).join(''):'<div class="ph-empty">No orders yet.</div>'}</div>`;
+  $('#csheet-body').innerHTML=body;
+  if(custEdit){
+    $('#cform').onsubmit=async e=>{e.preventDefault();const name=$('#c-name').value.trim();if(!name){$('#h-cname').classList.add('show');$('#c-name').focus();return}
+      const ph=$('#c-phone').value.trim(), row={name,phone:ph||null,phone_key:DI.phoneKey(ph),address:$('#c-address').value.trim()||null,notes:$('#c-notes').value.trim()||null};
+      setSaving($('#c-save'),true);
+      const r=isNew?await DB.insert('customers',{id:uid(),...row}):await DB.update('customers',c.id,row,c.version);
+      setSaving($('#c-save'),false);
+      if(r.conflict){$('#c-err-t').textContent='This customer was changed on another phone. Close and reopen to see the latest details.';$('#c-err').classList.add('show');return}
+      if(r.error){$('#c-err-t').textContent=r.error;$('#c-err').classList.add('show');return}
+      toast('Customer saved'); openCust=r.row.id; custEdit=false; renderCustSheet(); renderCustomers(); render()};
+    const cc=$('#c-cancel'); if(cc) cc.onclick=()=>{custEdit=false;renderCustSheet()};
+  } else {
+    $('#c-edit').onclick=()=>{custEdit=true;renderCustSheet();setTimeout(()=>$('#c-name').focus(),50)};
+    $('#c-order').onclick=()=>{closeSheetEl('#csheet');go('new',{customer:c})};
+  }
+}
 
 /* ======================================================================
    PRODUCTS
    ====================================================================== */
-function openProduct(p){
-  $('#p-id').value=p?p.id:''; $('#p-name').value=p?p.name:''; $('#p-price').value=p?p.price:''; $('#p-cost').value=p?p.cost:'';
-  $('#p-title').textContent=p?'Edit product':'New product'; $('#p-delete').style.display=p?'':'none'; $('#p-name').classList.remove('err');$('#h-pname').classList.remove('show');
-  $('#psheet').classList.add('show');$('#scrim').classList.add('show');document.body.style.overflow='hidden';setTimeout(()=>$('#p-name').focus(),80);
+function renderProducts(){
+  const ps=[...products].sort((a,b)=>a.name.localeCompare(b.name));
+  $('#plist').innerHTML = ps.length? ps.map(p=>`<button class="pcard" data-prod="${esc(p.id)}"><span class="em">${ic(pIcon(p.name))}</span>
+      <div class="pn"><b>${esc(p.name)}</b><span>${blank(p.cost)?'cost not set':'cost '+fmt(p.cost)+' per piece'}</span></div><span class="pp num">${fmt(p.price)}</span>
+      ${num(p.price)&&!blank(p.cost)?`<span class="pm">${Math.round((num(p.price)-num(p.cost))/num(p.price)*100)}%</span>`:''}</button>`).join('')
+    : emptyState('i-tag','No products yet','Save the pieces you sell with their usual price and cost. Adding them to an order then takes one tap.',null,true);
+  renderTiles();
 }
-function closeProduct(){$('#psheet').classList.remove('show');if(!$('#sheet').classList.contains('show'))$('#scrim').classList.remove('show');document.body.style.overflow=''}
+function openProduct(p){
+  $('#p-id').value=p?p.id:''; $('#p-name').value=p?p.name:''; $('#p-price').value=p?p.price:''; $('#p-cost').value=p&&!blank(p.cost)?p.cost:'';
+  $('#p-title').textContent=p?'Edit product':'New product'; $('#p-delete').style.display=p?'':'none'; $('#p-name').classList.remove('err');$('#h-pname').classList.remove('show');
+  openSheetEl('#psheet','#p-name');
+}
 $('#p-new').onclick=$('#p-new-d').onclick=()=>openProduct(null);
-$('#p-close').onclick=closeProduct;
 $('#p-name').oninput=()=>{$('#p-name').classList.remove('err');$('#h-pname').classList.remove('show')};
 $('#pform').onsubmit=async e=>{
-  e.preventDefault(); if(saving)return;
+  e.preventDefault(); if($('#p-save').disabled)return;
   if(!$('#p-name').value.trim()){$('#p-name').classList.add('err');$('#h-pname').classList.add('show');$('#p-name').focus();return}
   const id=$('#p-id').value||uid(), old=products.find(p=>p.id===id)||{};
-  const p={id,created_at:old.created_at||new Date().toISOString(),name:$('#p-name').value.trim(),price:num($('#p-price').value),cost:num($('#p-cost').value)};
-  saving=true;$('#p-save').classList.add('loading');const ok=await upsertProduct(p);saving=false;$('#p-save').classList.remove('loading');
-  if(ok){toast(old.id?'Product updated':'Product saved');closeProduct()}
+  const p={id,created_at:old.created_at||new Date().toISOString(),name:$('#p-name').value.trim(),price:num($('#p-price').value),cost:$('#p-cost').value===''?null:num($('#p-cost').value)};
+  setSaving($('#p-save'),true);const r=await DB.upsertProduct(p);setSaving($('#p-save'),false);
+  if(r.error){toast(r.error,'err');return}
+  toast(old.id?'Product updated':'Product saved');closeSheetEl('#psheet');renderProducts();
 };
-$('#p-delete').onclick=async()=>{if(await confirmDlg('Delete this product?','Orders that already use it are not affected.')){if(await removeProduct($('#p-id').value)){toast('Product deleted');closeProduct()}}};
+$('#p-delete').onclick=async()=>{if(await confirmDlg('Delete this product?','Orders that already use it are not affected.')){const r=await DB.deleteProduct($('#p-id').value);if(r.error){toast(r.error,'err');return}toast('Product deleted');closeSheetEl('#psheet');renderProducts()}};
 
 /* ======================================================================
-   SETTINGS
+   EXPENSES
    ====================================================================== */
-$('#sb-save').onclick=()=>{const url=$('#sb-url').value.trim(),key=$('#sb-key').value.trim();if(!url||!key)return toast('Enter both values','err');cfg={url,key};localStorage.setItem(LS.cfg,JSON.stringify(cfg));connect();toast('Connected')};
-$('#a-login').onclick=async()=>{const b=$('#a-login');b.classList.add('loading');const {error}=await sb.auth.signInWithPassword({email:$('#a-email').value.trim(),password:$('#a-pass').value});b.classList.remove('loading');if(error)toast(error.message,'err');else toast('Signed in')};
-$('#a-logout').onclick=async()=>{await sb.auth.signOut();user=null;setSync('wait','Sign in');renderSettings();toast('Signed out')};
-$('#sb-disconnect').onclick=async()=>{if(await confirmDlg('Disconnect Supabase?','Orders stay on this phone. You can reconnect any time.','Disconnect')){localStorage.removeItem(LS.cfg);location.reload()}};
-$('#set-save').onclick=()=>{settings.currency=$('#set-cur').value.trim()||'Rs';settings.name=$('#set-name').value.trim();localStorage.setItem(LS.set,JSON.stringify(settings));render();renderSettings();toast('Saved')};
-$('#push-local-btn').onclick=async()=>{const local=JSON.parse(localStorage.getItem(LS.orders)||'[]');if(!local.length)return toast('Nothing to upload','err');const {error}=await sb.from('orders').upsert(local);if(error)toast(error.message,'err');else{toast('Uploaded '+local.length+' orders');pull()}};
-$('#export').onclick=()=>{
-  const cols=['order_date','customer_name','phone','source','address','items','quantity','sale_price','cost','advance_paid','delivery_date','status','notes','line_items'];
-  const cell=(o,c)=>c==='line_items'?getLines(o).map(l=>`${num(l.qty)} x ${l.name} @ ${num(l.price)}${num(l.cost)?' (cost '+num(l.cost)+')':''}`).join('; '):String(o[c]??'');
-  const csv=[cols.join(',')].concat(orders.map(o=>cols.map(c=>'"'+cell(o,c).replace(/"/g,'""')+'"').join(','))).join('\n');
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='decorify-orders-'+today()+'.csv';a.click();toast('CSV exported');
+let eperiod='this_month', exp=null;
+function renderExpenses(){
+  const t=today(), p=eperiod==='all'?{from:'0000-01-01',to:'9999-12-31'}:DI.periodFor(eperiod,t);
+  $$('#echips .chip').forEach(c=>c.classList.toggle('on',c.dataset.ep===eperiod));
+  const inP=expenses.filter(e=>e.spent_on>=p.from&&e.spent_on<=p.to).sort((a,b)=>(b.spent_on+b.created_at).localeCompare(a.spent_on+a.created_at));
+  const sum=k=>inP.filter(e=>!e.voided_at&&(EKIND[e.category]||'operating')===k).reduce((a,e)=>a+num(e.amount),0);
+  $('#esum').innerHTML=`<div class="tile kp"><span class="chip-i">${ic('i-receipt')}</span><div class="lbl">Business expenses</div><div class="v num"><small>${esc(settings.currency)}</small>${fmtN(sum('operating'))}</div><div class="s">Reduce profit in the profit &amp; loss</div></div>
+    <div class="tile kp"><span class="chip-i">${ic('i-box')}</span><div class="lbl">Stock bought</div><div class="v num"><small>${esc(settings.currency)}</small>${fmtN(sum('stock'))}</div><div class="s">Not an expense until used in orders</div></div>
+    <div class="tile kp"><span class="chip-i">${ic('i-wallet')}</span><div class="lbl">Owner drawings</div><div class="v num"><small>${esc(settings.currency)}</small>${fmtN(sum('drawings'))}</div><div class="s">Money taken out; not an expense</div></div>`;
+  const groups={}; inP.forEach(e=>{const k=e.spent_on.slice(0,7);(groups[k]||(groups[k]=[])).push(e)});
+  $('#elist').innerHTML = inP.length? Object.keys(groups).sort().reverse().map(k=>{const g=groups[k], tot=g.filter(e=>!e.voided_at&&EKIND[e.category]==='operating').reduce((a,e)=>a+num(e.amount),0);
+    return `<div class="egroup"><b>${DI.monthLabel(k)}</b><span>${fmt(tot)} expenses</span></div>`+g.map(e=>{const kind=EKIND[e.category]||'operating';
+      return `<button class="erow ${kind} ${e.voided_at?'void':''}" data-exp="${esc(e.id)}"><span class="ei">${ic(kind==='stock'?'i-box':kind==='drawings'?'i-wallet':'i-receipt')}</span><span class="et"><b>${esc(e.description||ECAT[e.category]||e.category)}</b><span>${fmtDate(e.spent_on)} · ${esc(ECAT[e.category]||e.category)}${e.method?' · '+esc(e.method):''}${e.voided_at?' · voided: '+esc(e.void_reason||''):''}</span></span><span class="ea num">${fmt(e.amount)}</span></button>`}).join('')}).join('')
+    : `<div style="margin-top:16px">${emptyState('i-receipt','No expenses in these dates','Record packaging, courier, ads and bills here. Costs already entered on an order shouldn\'t be added again.')}</div>`;
+}
+$('#echips').onclick=e=>{const c=e.target.closest('[data-ep]');if(c){eperiod=c.dataset.ep;renderExpenses()}};
+function catHint(){const k=EKIND[$('#e-cat').value];$('#e-cat-s').textContent=k==='stock'?'Materials bought for future orders. Their cost reaches profit when you enter it on the orders that use them.':k==='drawings'?'Money taken out of the business for personal use. Shown separately; it does not reduce profit.':'If this was already included in an order\'s cost, don\'t record it again here.'}
+$('#e-cat').onchange=catHint;
+function openExpense(x){
+  exp={id:x?x.id:uid(),version:x?x.version:null,isNew:!x};
+  $('#e-title').textContent=x?'Edit expense':'Add expense'; $('#e-amount').value=x?x.amount:''; $('#e-date').value=x?x.spent_on:today();
+  $('#e-cat').value=x?x.category:'packaging'; $('#e-desc').value=x?(x.description||''):''; $('#e-method').value=x?(x.method||'Cash'):'Cash';
+  $('#e-void').style.display=x&&!x.voided_at?'':'none'; $('#e-save').style.display=x&&x.voided_at?'none':''; $('#h-eamt').classList.remove('show'); $('#e-err').classList.remove('show');
+  catHint(); openSheetEl('#esheet','#e-amount');
+}
+$('#e-new').onclick=$('#e-new-d').onclick=()=>openExpense(null);
+$('#eform').onsubmit=async e=>{
+  e.preventDefault(); if(!exp||$('#e-save').disabled)return;
+  const amt=num($('#e-amount').value); if(!(amt>0)){$('#h-eamt').classList.add('show');$('#e-amount').focus();return}
+  const row={spent_on:$('#e-date').value||today(),category:$('#e-cat').value,description:$('#e-desc').value.trim()||null,amount:amt,method:$('#e-method').value};
+  setSaving($('#e-save'),true);
+  const r=exp.isNew?await DB.insert('expenses',{id:exp.id,...row}):await DB.update('expenses',exp.id,row,exp.version);
+  setSaving($('#e-save'),false);
+  if(r.conflict){$('#e-err-t').textContent='This expense was changed on another phone. Close and reopen it to see the latest.';$('#e-err').classList.add('show');return}
+  if(r.error){$('#e-err-t').textContent=r.error;$('#e-err').classList.add('show');return}
+  toast('Expense saved'); closeSheetEl('#esheet'); exp=null; renderExpenses(); if($('#s-insights').classList.contains('active'))renderInsights();
+};
+$('#e-void').onclick=async()=>{
+  if(!exp)return; const v=await dlg({title:'Void this expense?',text:'It stays in the list, crossed out, and stops counting in totals.',input:{placeholder:'Reason, e.g. entered twice'},buttons:[{label:'Keep it',value:null},{label:'Void',value:'void',cls:'danger',needsText:true}]});
+  if(!v||!v.value)return; const r=await DB.update('expenses',exp.id,{voided_at:new Date().toISOString(),void_reason:v.text},exp.version);
+  if(r.error||r.conflict){toast(r.error||'Changed on another phone; reopen it and try again.','err');return}
+  toast('Expense voided'); closeSheetEl('#esheet'); exp=null; renderExpenses();
 };
 
 /* ======================================================================
-   INSIGHTS: read-only; every figure comes from DSInsights.compute()
+   SETTINGS & EXPORT
    ====================================================================== */
-const DI = window.DSInsights;
+function renderSettings(){
+  const note=$('#syncNote');
+  $('#sb-config').style.display = cfg? 'none':'block';
+  $('#sb-connected').style.display = cfg&&user ? 'block':'none';
+  if(!cfg) note.textContent='Orders are saved on this device only. Connect a Supabase project to share them between phones.';
+  else if(!user) note.textContent='Not signed in.';
+  else {note.textContent='';$('#a-who').textContent=user.email+(me?.role==='finance'?' (finance)':'')}
+  $('#set-cur').value=settings.currency; $('#set-name').value=settings.name||''; $$('[data-cur]').forEach(e=>e.textContent=settings.currency);
+}
+$('#sb-save').onclick=()=>{const url=$('#sb-url').value.trim(),key=$('#sb-key').value.trim();if(!url||!key)return toast('Enter both values','err');cfg={url,key};writeJSON(LS.cfg,cfg);location.reload()};
+$('#a-logout').onclick=async()=>{if(!await confirmDlg('Sign out?','The copy of your records on this phone will be removed. Everything stays safe in your shared account.','Sign out','primary'))return;
+  try{await sb.auth.signOut()}catch(e){} signedOut(true)};
+$('#set-save').onclick=()=>{settings.currency=safeCur($('#set-cur').value);settings.name=$('#set-name').value.trim();writeJSON(LS.set,settings);render();renderSettings();flashOk($('#set-save'),'Saved')};
+function csvCell(v){let s=v==null?'':String(v);if(typeof v==='string'&&/^[=+\-@\t\r]/.test(s)&&isNaN(+s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'}
+function download(name,rows){const csv=rows.map(r=>r.map(csvCell).join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv'}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+function exportCSV(kind){
+  const d=today();
+  if(kind==='orders') download(`decorify-orders-${d}.csv`,[['order_id','order_date','customer','phone','source','address','items','quantity','order_total','delivery_cost','direct_cost','order_profit','received','balance','payment_status','stage','planned_delivery','delivered_on','notes','pieces'],
+    ...orders.map(o=>{const m=money(o);return [o.id,o.order_date,o.customer_name,o.phone,o.source,o.address,o.items,o.quantity,num(o.sale_price),num(o.delivery_cost),costKnown(o)?num(o.cost):'',profitOf(o)??'',m.net,m.balance,DI.PAY_LABEL[m.status],LABEL[o.status],o.delivery_date,o.delivered_on,o.notes,getLines(o).map(l=>`${num(l.qty)} x ${l.name} @ ${num(l.price)}${blank(l.cost)?'':' (cost '+num(l.cost)+')'}`).join('; ')]})]);
+  else if(kind==='payments') download(`decorify-payments-${d}.csv`,[['payment_id','order_id','customer','type','amount','date','method','reference','note','voided','void_reason'],
+    ...payments.map(p=>{const o=orders.find(x=>x.id===p.order_id);return [p.id,p.order_id,o?.customer_name||'',p.kind,num(p.amount),p.paid_on,p.method,p.reference,p.note,p.voided_at?'yes':'',p.void_reason]})]);
+  else if(kind==='expenses') download(`decorify-expenses-${d}.csv`,[['date','type','group','description','amount','paid_by','voided','void_reason'],
+    ...expenses.map(e=>[e.spent_on,ECAT[e.category]||e.category,EKIND[e.category]==='operating'?'Business expense':EKIND[e.category]==='stock'?'Stock purchase':'Owner drawings',e.description,num(e.amount),e.method,e.voided_at?'yes':'',e.void_reason])]);
+  else download(`decorify-customers-${d}.csv`,[['name','phone','address','orders','sales','balance','notes'],...custView().map(x=>[x.c.name,x.c.phone,x.c.address,x.n,x.sales,x.balance,x.c.notes])]);
+  toast('CSV downloaded');
+}
 let insPeriod = (()=>{try{return localStorage.getItem('ds_ins_period')||'this_month'}catch(e){return 'this_month'}})();
-let insCustom = {from:null,to:null}, lastIns = null, dateFilter = null, tipMonth = null;
+let insBasis = (()=>{try{return localStorage.getItem('ds_ins_basis')||'booked'}catch(e){return 'booked'}})();
+let insCustom = {from:null,to:null}, lastIns = null, tipMonth = null;
 const cur = () => esc(settings.currency);
 const mny = n => n==null?'—':`<small>${cur()}</small>${n<0?'−':''}${Math.abs(Math.round(n)).toLocaleString('en-PK')}`;
 const mnyA = n => n==null?'—':`<small>${cur()}</small>${n<0?'−':''}${Math.abs(n).toLocaleString('en-PK',{maximumFractionDigits:2})}`;
 const txt = n => n==null?'—':`${settings.currency} ${n<0?'−':''}${Math.abs(Math.round(n)).toLocaleString('en-PK')}`;
 const txtA = n => n==null?'—':`${settings.currency} ${n<0?'−':''}${Math.abs(n).toLocaleString('en-PK',{maximumFractionDigits:2})}`;
+const toPaisa = v => Math.round((+v||0)*100);
 const pct = v => v==null?'Not available':`${v<0?'−':''}${Math.abs(Math.round(v*10)/10).toLocaleString('en-PK')}%`;
 const nfmt = (v,d=2) => v==null?'—':(+v).toLocaleString('en-PK',{maximumFractionDigits:d});
 const longDate = d => new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-const plural = (n,w,ws) => `${n.toLocaleString('en-PK')} ${n===1?w:(ws||w+'s')}`;
 const compact = v => {const a=Math.abs(v),s=v<0?'−':'';return a>=1e6?s+nfmt(a/1e6,2)+'M':a>=1e3?s+nfmt(a/1e3,a>=1e5?0:1)+'k':s+nfmt(a,0)};
-const listNames = a => a.length<=1?a.join(''):a.slice(0,-1).join(', ')+' and '+a[a.length-1];
+const listNames = a => { a=a.map(esc); return a.length<=1?a.join(''):a.slice(0,-1).join(', ')+' and '+a[a.length-1]; };
 
 function insPeriodObj(){const t=today();return insPeriod==='custom'?DI.periodFor('custom',t,{from:insCustom.from||t,to:insCustom.to||t}):DI.periodFor(insPeriod,t)}
 function renderInsights(){
   if(!DI){$('#ins-body').innerHTML=emptyState('i-alert','Insights could not load','The calculation file is missing. Refresh the app.',null,true);return}
-  const r = lastIns = DI.compute(orders,{today:today(),period:insPeriodObj()}), T=r.totals;
+  const r = lastIns = DI.compute(orders,{today:today(),period:insPeriodObj(),basis:insBasis,payments,expenses}), T=r.totals;
+  $$('#ins-basis-pick button').forEach(b=>b.classList.toggle('on',b.dataset.basis===insBasis));
   $$('#ins-periods .chip').forEach(c=>{const on=c.dataset.period===insPeriod;c.classList.toggle('on',on);c.setAttribute('aria-selected',on)});
   $('#ins-custom').hidden = insPeriod!=='custom';
   if(insPeriod==='custom'){$('#ins-from').value=r.period.from;$('#ins-to').value=r.period.to}
   $('#ins-dates').textContent = `${r.period.label} · ${longDate(r.period.from)} – ${longDate(r.period.to)}`;
-  $('#ins-basis').innerHTML = `<b>Which orders count:</b> booked orders that are not cancelled, grouped by their <b>order date</b>. This is the same rule the Home screen uses.
+  $('#ins-basis').innerHTML = `<b>Which orders count:</b> ${insBasis==='delivered'?'orders <b>delivered</b> in these dates, by the day they reached the customer. Use this to see what you actually earned each month.':'orders <b>booked</b> in these dates (not cancelled), by order date. This is the same rule the Home screen uses.'}
     <ul><li><b>Sales</b> are the order totals as saved. Payments received don't change sales or profit.</li>
-    <li><b>Order profit</b> = sales minus the direct costs recorded on each order, <b>before business expenses</b> such as rent or your own time. <i>Earned</i> means delivered orders; <i>expected</i> means orders still being made.</li>
-    <li>A cost left blank is saved as 0, so an order with a sale price and a cost of 0 is treated as <b>cost not recorded</b>, and profit is shown only for orders with costs.</li>
-    <li><b>Customers</b> are recognised by phone number, never by name alone. Orders without a phone count in sales but not in customer numbers.</li>
+    <li><b>Order profit</b> = sales minus the direct costs entered on each order, <b>before business expenses</b>. <i>Earned</i> means delivered; <i>expected</i> means still being made.</li>
+    <li>A cost left <b>blank</b> means "not entered yet". Profit is then shown only for the orders that have costs, with the count. A cost of 0 means it really was free.</li>
+    <li><b>Money owed</b> is each order's total minus payments received (refunds and voided payments taken into account), as of today.</li>
+    <li><b>Profit &amp; loss</b> uses delivered orders in these dates, minus recorded business expenses. Stock bought and owner drawings are shown separately and are not expenses.</li>
+    <li><b>Customers</b> are the customer records linked to orders; older orders without one are matched by phone number, never by name.</li>
     <li><b>Monthly averages and best/lowest months</b> use only complete calendar months inside the dates you pick. The current month is shown as "so far".</li></ul>`;
   const body=$('#ins-body');
-  if(!r.hasAnyOrders){body.innerHTML=`<div style="margin-top:18px">${emptyState('i-chart','Insights appear after your first order','Once orders are saved, this page shows sales, order profit, best months, customers and products.','New order',true)}</div>`;return}
-  body.innerHTML = insHero(r) + insLifetime(r) + insSays(r) + insTrends(r) + insPerOrder(r) + insCustomers(r) + insProducts(r) + insMonthTable(r) + insQuality(r);
+  if(!r.hasAnyOrders){body.innerHTML=(insBasis==='delivered'&&orders.length?`<div style="margin-top:18px">${emptyState('i-truck','No delivered orders yet','Switch to "By order date" to see orders that are still being made.')}</div>`:`<div style="margin-top:18px">${emptyState('i-chart','Insights appear after your first order','Once orders are saved, this page shows sales, order profit, best months, customers, money owed and products.','New order',true)}</div>`)+insOwed(r);return}
+  body.innerHTML = insHero(r) + insLifetime(r) + insSays(r) + insOwed(r) + insPnl(r) + insTrends(r) + insPerOrder(r) + insCustomers(r) + insProducts(r) + insMonthTable(r) + insQuality(r);
   fitCharts();
 }
 function fitCharts(){
@@ -1411,14 +2198,14 @@ function insHero(r){
   return `<div class="ins-hero">
     <div class="box"><div class="ribbon"></div>
       <svg class="bow" viewBox="0 0 48 46" aria-hidden="true"><path d="M24 22c-6-10-18-12-20-6s10 9 20 6zM24 22c6-10 18-12 20-6s-10 9-20 6z" fill="var(--ribbon)"/><path d="M24 22l-7 20M24 22l7 20" stroke="var(--ribbon)" stroke-width="4" stroke-linecap="round"/><circle cx="24" cy="22" r="4" fill="#E4C98F"/></svg>
-      <div class="in"><div class="lbl">Booked sales</div><div class="big num"><small>${cur()}</small>${fmtN(T.sales)}</div>
+      <div class="in"><div class="lbl">${r.basis==='delivered'?'Delivered sales':'Booked sales'}</div><div class="big num"><small>${cur()}</small>${fmtN(T.sales)}</div>
       <div class="subt">${none?'No orders in these dates.':`<b>${plural(T.orders,'order')}</b> · average <b>${txtA(T.aov)}</b> per order`}</div></div>
       <div class="split"><div>Delivered<b class="num">${txt(T.earned.sales)}</b></div><div>Still open<b class="num">${txt(T.expected.sales)}</b></div></div>
     </div>
     <div class="stat"><div class="lbl">Order profit</div>${profitBlock}
       <div class="rows">${kv('Earned · delivered',ep(T.earned),'num')}${kv('Expected · still open',ep(T.expected),'num')}</div></div>
     <div class="stat"><div class="lbl">Direct cost</div><div class="v serif num">${mny(T.costRecorded)}</div>
-      <div class="s">Materials and delivery costs recorded on these orders.</div>
+      <div class="s">Materials and delivery costs entered on these orders.</div>
       ${T.costComplete?'':`<span class="flag">${ic('i-alert')}${plural(T.missingCostOrders,'order')} with no cost recorded</span>`}
       <div class="rows">${kv('Orders',T.orders.toLocaleString('en-PK'),'num')}${kv('Average cost per order',T.costComplete?txtA(T.avgCost):(T.completeSubset.avgCost!=null?txtA(T.completeSubset.avgCost)+'*':'—'),'num')}</div>
       ${T.costComplete?'':`<div class="sub">* Based on the ${T.completeSubset.orders} order${T.completeSubset.orders===1?'':'s'} with costs recorded.</div>`}</div>
@@ -1428,12 +2215,12 @@ function insLifetime(r){
   const L=r.lifetime;
   const pv = L.costComplete? mny(L.profit) : mny(L.completeSubset.profit);
   return `<div class="lifetime" aria-label="All-time figures">
-    <div class="lt-h"><b>All time through ${longDate(L.through)}</b><span>Not affected by the dates above · records since ${DI.monthLabel(L.coverageStart.slice(0,7))}</span></div>
+    <div class="lt-h"><b>All time through ${longDate(L.through)}</b><span>Not affected by the dates above · ${r.basis==='delivered'?'deliveries':'records'} since ${DI.monthLabel(L.coverageStart.slice(0,7))}</span></div>
     <div class="lt-g">
       <div><div class="lbl">Profit to date</div><div class="v num">${pv}</div><div class="sub">${L.costComplete?'Order profit, before business expenses':`From ${L.completeSubset.orders} of ${L.orders} orders with costs recorded`}</div></div>
-      <div><div class="lbl">Sales to date</div><div class="v num">${mny(L.sales)}</div><div class="sub">Booked orders</div></div>
+      <div><div class="lbl">Sales to date</div><div class="v num">${mny(L.sales)}</div><div class="sub">${r.basis==='delivered'?'Delivered orders':'Booked orders'}</div></div>
       <div><div class="lbl">Orders to date</div><div class="v num">${L.orders.toLocaleString('en-PK')}</div><div class="sub">Not cancelled</div></div>
-      <div><div class="lbl">Customers to date</div><div class="v num">${L.customers.toLocaleString('en-PK')}</div><div class="sub">${L.unidentifiedOrders?`Plus ${plural(L.unidentifiedOrders,'order')} without a phone`:'Recognised by phone number'}</div></div>
+      <div><div class="lbl">Customers to date</div><div class="v num">${L.customers.toLocaleString('en-PK')}</div><div class="sub">${L.unidentifiedOrders?`Plus ${plural(L.unidentifiedOrders,'order')} not linked to a customer`:'Linked customer records'}</div></div>
     </div></div>`;
 }
 function sayText(s){
@@ -1452,6 +2239,8 @@ function sayText(s){
     case 'negative': return [`<b>${plural(d.n,'order')}</b> ${d.n===1?'was':'were'} sold below the recorded cost.`,'Worth checking the price or the cost entered on these orders.'];
     case 'missingCost': return [`<b>${d.n} of ${plural(d.of,'order')}</b> ${d.n===1?'has':'have'} no cost recorded.`,'Add the costs to those orders to complete the profit picture.'];
     case 'expected': return [`<b>${plural(d.n,'open order')}</b> ${d.n===1?'is':'are'} expected to add <b>${txt(d.profit)}</b> of order profit once delivered.`];
+    case 'owed': return [`Customers owe you <b>${txt(d.owed)}</b> across ${plural(d.n,'order')}.`, d.deliveredN?`${txt(d.delivered)} of it is on ${plural(d.deliveredN,'order')} already delivered.`:'None of it is on delivered orders yet.'];
+    case 'aovChange': { const c=d.current,p=d.previous; return [`Your average order value was <b>${txtA(c.aov)}</b> in ${c.label}, ${toPaisa(c.aov)>toPaisa(p.aov)?'up':'down'} from ${txtA(p.aov)} in ${p.label}.`,'Both are complete months.'] }
   }
   return [''];
 }
@@ -1528,20 +2317,20 @@ function insPerOrder(r){
 function insCustomers(r){
   const C=r.customers, T=r.totals; if(!T.orders) return '';
   const top=C.top.slice(0,8);
-  const rows=top.map(c=>`<tr data-cfilter="${esc(c.phone||'')}"><td><b>${esc(c.name)}</b></td><td>${c.orders}</td><td>${txt(c.sales)}</td><td>${txtA(c.aov)}</td><td class="${c.currentBalance>0?'':'muted'}">${c.currentBalance>0?txt(c.currentBalance):'Paid'}</td></tr>`).join('');
-  const cards=top.map(c=>`<button class="mcard" data-cfilter="${esc(c.phone||'')}"><div class="top"><b>${esc(c.name)}</b><span class="num">${txt(c.sales)}</span></div><div class="g"><div>Orders<b>${c.orders}</b></div><div>Avg order<b class="num">${txtA(c.aov)}</b></div><div>Balance now<b class="num">${c.currentBalance>0?txt(c.currentBalance):'Paid'}</b></div></div></button>`).join('');
+  const rows=top.map(c=>`<tr ${c.customerId?`data-cust="${esc(c.customerId)}"`:`data-cfilter="${esc(c.phone||'')}"`}><td><b>${esc(c.name)}</b></td><td>${c.orders}</td><td>${txt(c.sales)}</td><td>${txtA(c.aov)}</td><td class="${c.currentBalance>0?'':'muted'}">${c.currentBalance>0?txt(c.currentBalance):c.currentBalance<0?'Credit '+txt(-c.currentBalance):'Settled'}</td></tr>`).join('');
+  const cards=top.map(c=>`<button class="mcard" ${c.customerId?`data-cust="${esc(c.customerId)}"`:`data-cfilter="${esc(c.phone||'')}"`}><div class="top"><b>${esc(c.name)}</b><span class="num">${txt(c.sales)}</span></div><div class="g"><div>Orders<b>${c.orders}</b></div><div>Avg order<b class="num">${txtA(c.aov)}</b></div><div>Balance now<b class="num">${c.currentBalance>0?txt(c.currentBalance):c.currentBalance<0?'Credit '+txt(-c.currentBalance):'Settled'}</b></div></div></button>`).join('');
   return `<div class="ins-sec"><div class="sec-h"><h2>Customers</h2></div>
     <div class="mgrid four">
-      <div class="mini"><div class="lbl">Customers in this period</div><div class="v num">${C.inPeriod}</div><div class="s">${C.unidentifiedInPeriod?`Plus ${plural(C.unidentifiedInPeriod,'order')} without a phone number.`:'Recognised by phone number.'}</div></div>
+      <div class="mini"><div class="lbl">Customers in this period</div><div class="v num">${C.inPeriod}</div><div class="s">${C.unidentifiedInPeriod?`Plus ${plural(C.unidentifiedInPeriod,'order')} not linked to a customer.`:'Linked customer records.'}</div></div>
       <div class="mini"><div class="lbl">Repeat customers</div><div class="v num">${C.repeat}</div><div class="s">Customers with 2+ orders in this period.</div></div>
       <div class="mini"><div class="lbl">Repeat customer rate</div><div class="v num">${C.inPeriod?pct(C.repeatRate):'<span class="na">Not available</span>'}</div><div class="s">Repeat customers ÷ customers in this period.</div></div>
-      <div class="mini"><div class="lbl">Customers to date</div><div class="v num">${C.toDate}</div><div class="s">All time, by phone number.</div></div>
+      <div class="mini"><div class="lbl">Customers to date</div><div class="v num">${C.toDate}</div><div class="s">All time.</div></div>
     </div>
     ${top.length?`<div style="margin-top:12px"><div class="lbl" style="margin:0 0 8px">Top customers by sales</div>
       <div class="tbl-wrap desk-block"><table class="tbl"><thead><tr><th>Customer</th><th>Orders</th><th>Net sales</th><th>Avg order value</th><th>Current balance*</th></tr></thead><tbody>${rows}</tbody></table></div>
       <div class="mcards only-phone">${cards}</div>
       <div class="cover-note">* Current balance is what each customer owes today across all their orders, not just these dates. Payments never change sales.</div></div>`
-      : `<div class="cover-note" style="margin-top:10px">None of the orders in these dates has a phone number, so customers can't be counted. Add phone numbers to orders to see customer insights.</div>`}
+      : `<div class="cover-note" style="margin-top:10px">None of the orders in these dates is linked to a customer, so customers can't be counted.</div>`}
   </div>`;
 }
 function insProducts(r){
@@ -1581,17 +2370,50 @@ function insMonthTable(r){
     <div class="cover-note">Customers are counted once per month; the total counts each customer once for the whole period, so it isn't the sum of the months.${ms.some(m=>m.unidentifiedOrders)?' "+n" = orders without a phone.':''}${ms.some(m=>m.cost==null)?' * Recorded costs only; some orders that month have no cost, so profit is not shown.':''}</div></div>`;
 }
 function insQuality(r){
-  const n=[], T=r.totals, L=r.lifetime;
-  n.push(`Records start in <b>${DI.monthLabel(r.coverageStart.slice(0,7))}</b>, the month of the first order. Later months with no orders count as genuine zero months.`);
-  if(L.missingCostOrders) n.push(`<b>${plural(L.missingCostOrders,'order')}</b> in all your records ${L.missingCostOrders===1?'has':'have'} no cost recorded. Open ${L.missingCostOrders===1?'it':'them'} and add the cost to complete profit figures.`);
-  if(L.unidentifiedOrders) n.push(`<b>${plural(L.unidentifiedOrders,'order')}</b> ${L.unidentifiedOrders===1?'has':'have'} no phone number, so ${L.unidentifiedOrders===1?'it is':'they are'} counted in sales and orders but not in customer numbers.`);
-  if(r.futureDatedOrders) n.push(`<b>${plural(r.futureDatedOrders,'order')}</b> ${r.futureDatedOrders===1?'has':'have'} an order date after today and ${r.futureDatedOrders===1?'is':'are'} not included yet.`);
-  n.push('Discounts, refunds and business expenses (rent, utilities, your time) are not recorded in the app, so profit here is <b>order profit before business expenses</b>, not net business profit.');
+  const n=[], L=r.lifetime;
+  n.push(`Records start in <b>${DI.monthLabel(r.coverageStart.slice(0,7))}</b>, the month of the first ${r.basis==='delivered'?'delivery':'order'}. Later months with none count as genuine zero months.`);
+  if(L.missingCostOrders) n.push(`<b>${plural(L.missingCostOrders,'order')}</b> in all your records ${L.missingCostOrders===1?'has':'have'} no cost entered yet. Open ${L.missingCostOrders===1?'it':'them'} and add the cost to complete profit figures.`);
+  if(L.unidentifiedOrders) n.push(`<b>${plural(L.unidentifiedOrders,'order')}</b> ${L.unidentifiedOrders===1?'is':'are'} not linked to a customer, so ${L.unidentifiedOrders===1?'it is':'they are'} counted in sales and orders but not in customer numbers.`);
+  if(r.deliveredWithoutDate) n.push(`<b>${plural(r.deliveredWithoutDate,'delivered order')}</b> ${r.deliveredWithoutDate===1?'has':'have'} no delivery date recorded, so ${r.deliveredWithoutDate===1?'it is':'they are'} left out of the "By delivery date" view rather than guessed.`);
+  if(r.futureDatedOrders) n.push(`<b>${plural(r.futureDatedOrders,'order')}</b> ${r.futureDatedOrders===1?'has':'have'} a date after today and ${r.futureDatedOrders===1?'is':'are'} not included yet.`);
+  n.push('Discounts are part of the order total you enter. Profit here is <b>order profit before business expenses</b>; the Profit &amp; loss section takes off the expenses you record.');
   return `<div class="dq"><h3>About this data</h3><ul>${n.map(x=>`<li>${x}</li>`).join('')}</ul></div>`;
+}
+function insOwed(r){
+  const R=r.receivables; if(!R||(!R.owedOrders&&!R.creditOrders)) return '';
+  const top=R.owing.slice(0,6);
+  return `<div class="ins-sec owed"><div class="sec-h"><h2>Money owed</h2><span class="lbl">As of today · all orders</span></div>
+    <div class="mgrid four">
+      <div class="mini due" style="background:var(--warning-soft);box-shadow:none"><div class="lbl" style="color:var(--warning)">Customers owe you</div><div class="v num">${mny(R.owed)}</div><div class="s">Across ${plural(R.owedOrders,'order')}.</div></div>
+      <div class="mini"><div class="lbl">On delivered orders</div><div class="v num">${mny(R.owedDelivered)}</div><div class="s">${plural(R.owedDeliveredOrders,'order')} delivered but not fully paid.</div></div>
+      <div class="mini"><div class="lbl">Customer credit</div><div class="v num">${mny(R.credit)}</div><div class="s">${R.creditOrders?`${plural(R.creditOrders,'order')} paid more than the total, or cancelled after paying.`:'No overpayments.'}</div></div>
+      <div class="mini"><div class="lbl">Customers owing</div><div class="v num">${R.owing.length}</div><div class="s">Tap a name below to see their orders.</div></div>
+    </div>
+    ${top.length?`<div class="chart-card" style="margin-top:12px"><div class="chart-head"><h3>Who owes the most</h3></div><div class="pbars">${top.map(c=>`<button class="pbar" ${c.customerId?`data-cust="${esc(c.customerId)}"`:`data-cfilter="${esc(c.phone||c.name)}"`}><span class="nm">${ic('i-user')}${esc(c.name)}</span><span class="am num">${txt(c.balance)}</span><span class="track"><i style="width:${Math.max(2,c.balance/top[0].balance*100)}%;background:var(--warning)"></i></span><span class="sub">${plural(c.orders,'order')} with a balance</span></button>`).join('')}</div></div>`:''}
+  </div>`;
+}
+function insPnl(r){
+  const P=r.pnl; if(!P) return '';
+  const nothing=!P.deliveredOrders&&!P.expenseEntries;
+  if(nothing) return `<div class="ins-sec"><div class="sec-h"><h2>Profit &amp; loss</h2><span class="lbl">Delivered orders · ${longDate(P.from)} – ${longDate(P.to)}</span></div>${emptyState('i-receipt','Nothing delivered or spent in these dates','Once orders are delivered and expenses recorded, a simple profit & loss appears here.')}</div>`;
+  const op = P.operatingProfit;
+  return `<div class="ins-sec"><div class="sec-h"><h2>Profit &amp; loss</h2><span class="lbl">Delivered orders · ${longDate(P.from)} – ${longDate(P.to)}</span></div>
+    <div class="pl">
+      ${kv(`Sales from delivered orders<br><small style="color:var(--text-muted)">${plural(P.deliveredOrders,'order')}</small>`,txt(P.sales),'num')}
+      ${kv('Less: direct costs of those orders',P.costComplete?'− '+txt(P.directCost):`<span style="color:var(--warning)">${plural(P.missingCostOrders,'order')} without cost</span>`,'num')}
+      ${P.deliveryCost?`<div class="kvr sub"><span>of which delivery</span><b class="num">${txt(P.deliveryCost)}</b></div>`:''}
+      <div class="kvr mid"><span>Order profit</span><b class="num">${P.orderProfit==null?'Not available':txt(P.orderProfit)}</b></div>
+      ${kv('Less: business expenses','− '+txt(P.operatingExpenses),'num')}
+      ${P.expenseLines.map(x=>`<div class="kvr sub"><span>${esc(x.label)}</span><b class="num">${txt(x.amount)}</b></div>`).join('')}
+      <div class="kvr tot"><span>Operating profit</span><b class="num ${op!=null&&op<0?'neg':''}" style="${op!=null&&op<0?'color:var(--danger)':''}">${op==null?'—':txt(op)}</b></div>
+      ${op==null?`<div class="flag">${ic('i-alert')}Add the missing order costs to see operating profit${P.subset.orders?` (the ${plural(P.subset.orders,'costed order')} made ${txt(P.subset.profit)})`:''}.</div>`:''}
+      <div class="aside">Shown separately, not expenses: stock / materials bought <b>${txt(P.stockPurchases)}</b> · owner drawings <b>${txt(P.ownerDrawings)}</b>.${P.deliveredWithoutDate?` ${plural(P.deliveredWithoutDate,'delivered order')} without a delivery date ${P.deliveredWithoutDate===1?'is':'are'} not included.`:''} Costs already entered on orders are not counted again.</div>
+    </div></div>`;
 }
 /* insights interactions */
 $('#ins-periods').onclick=e=>{const c=e.target.closest('[data-period]');if(!c)return;insPeriod=c.dataset.period;try{localStorage.setItem('ds_ins_period',insPeriod)}catch(_){}
   if(insPeriod==='custom'&&!insCustom.from){const p=lastIns?lastIns.period:DI.periodFor('this_month',today());insCustom={from:p.from,to:p.to}}renderInsights()};
+$('#ins-basis-pick').onclick=e=>{const b=e.target.closest('[data-basis]');if(!b)return;insBasis=b.dataset.basis;try{localStorage.setItem('ds_ins_basis',insBasis)}catch(_){}renderInsights()};
 $('#ins-apply').onclick=()=>{const f=$('#ins-from').value,t=$('#ins-to').value;if(!f||!t)return toast('Choose both dates','err');insCustom={from:f,to:t};renderInsights()};
 function showTip(card,i,target){
   const m=lastIns&&lastIns.months[i]; if(!m) return; const tip=card.querySelector('.tip');
@@ -1600,24 +2422,34 @@ function showTip(card,i,target){
   const tw=200; let x=tr.right-cr.left+6; if(x+tw>cr.width-8) x=tr.left-cr.left-tw-6; x=Math.max(8,Math.min(x,cr.width-tw-8)); tip.style.left=x+'px'; tip.style.top=Math.max(40,tr.top-cr.top+10)+'px'; tip.classList.add('show');
   card.querySelectorAll('.hit').forEach(h=>h.classList.toggle('on',h===target));
 }
-function openMonthOrders(i){const m=lastIns&&lastIns.months[i];if(!m)return;dateFilter={from:m.from,to:m.to,label:m.label+(m.complete?'':(m.current?' (so far)':' (partial)'))};filter='all';query='';$('#q').value='';renderOrders();go('orders')}
+function openMonthOrders(i){const m=lastIns&&lastIns.months[i];if(!m)return;dateFilter={from:m.from,to:m.to,basis:lastIns.basis,label:m.label+(m.complete?'':(m.current?' (so far)':' (partial)'))};filter=lastIns.basis==='delivered'?'delivered':'all';query='';$('#q').value='';renderOrders();go('orders')}
 $('#ins-body').addEventListener('pointerover',e=>{const h=e.target.closest('.hit');if(!h||e.pointerType==='touch')return;showTip(h.closest('.chart-card'),+h.dataset.mi,h)});
 $('#ins-body').addEventListener('pointerout',e=>{const h=e.target.closest('.hit');if(!h||e.pointerType==='touch')return;const c=h.closest('.chart-card');c.querySelector('.tip').classList.remove('show');h.classList.remove('on')});
 $('#ins-body').addEventListener('click',e=>{
   const h=e.target.closest('.hit'); if(h){const i=+h.dataset.mi; if(!matchMedia('(hover:hover)').matches && tipMonth!==i+'|'+h.closest('.chart-card').id){tipMonth=i+'|'+h.closest('.chart-card').id;showTip(h.closest('.chart-card'),i,h);return} tipMonth=null; openMonthOrders(i); return}
   const mr=e.target.closest('[data-mi]'); if(mr){openMonthOrders(+mr.dataset.mi);return}
-  const pf=e.target.closest('[data-pfilter]'); if(pf&&lastIns){const p=lastIns.period;dateFilter={from:p.from,to:p.to,label:`${longDate(p.from)} – ${longDate(p.to)}`};filter='all';query=pf.dataset.pfilter;$('#q').value=query;renderOrders();go('orders');return}
-  const cf=e.target.closest('[data-cfilter]'); if(cf&&lastIns){const p=lastIns.period;dateFilter={from:p.from,to:p.to,label:`${longDate(p.from)} – ${longDate(p.to)}`};filter='all';query=cf.dataset.cfilter;$('#q').value=query;renderOrders();go('orders');return}
+  const cu=e.target.closest('[data-cust]'); if(cu) return; // handled by the global customer handler
+  const pf=e.target.closest('[data-pfilter]'); if(pf&&lastIns){const p=lastIns.period;dateFilter={from:p.from,to:p.to,basis:lastIns.basis,label:`${longDate(p.from)} – ${longDate(p.to)}`};filter='all';query=pf.dataset.pfilter;$('#q').value=query;renderOrders();go('orders');return}
+  const cf=e.target.closest('[data-cfilter]'); if(cf&&lastIns){const p=lastIns.period;dateFilter=cf.closest('.owed')?null:{from:p.from,to:p.to,basis:lastIns.basis,label:`${longDate(p.from)} – ${longDate(p.to)}`};filter='all';query=cf.dataset.cfilter;$('#q').value=query;renderOrders();go('orders');return}
 });
 $('#ins-body').addEventListener('keydown',e=>{const h=e.target.closest('.hit');if(h&&(e.key==='Enter'||e.key===' ')){e.preventDefault();openMonthOrders(+h.dataset.mi)}});
 $('#ins-body').addEventListener('focusin',e=>{const h=e.target.closest('.hit');if(h)showTip(h.closest('.chart-card'),+h.dataset.mi,h)});
 
 /* ======================================================================
-   BOOT
+   RENDER & BOOT
    ====================================================================== */
+function render(){renderHome();renderOrders();renderProducts();
+  if($('#s-insights').classList.contains('active'))renderInsights();
+  if($('#s-customers').classList.contains('active'))renderCustomers();
+  if($('#s-expenses').classList.contains('active'))renderExpenses();
+  if($('#s-form').classList.contains('active'))calc();
+  renderSettings();}
 applyTheme(themePref(),false);
-loadLocal(); render(); renderSettings(); connect();
+if(cfg){ cacheLoad(); if(!readJSON(LS.orders,null)) loading=true; } else cacheLoad();
+render(); renderSettings(); netbar(); connect();
+if(cfg && !user) { /* the gate opens once the saved session has been checked */ }
 if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
+
 </script>
 </body>
 </html>
