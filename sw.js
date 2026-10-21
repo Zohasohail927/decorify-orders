@@ -3,8 +3,8 @@
 // Customer data from Supabase is never stored in the browser cache.
 // CACHE and the versioned file names are written by build/assemble.py on every build, so a new
 // release never mixes with files from an older one.
-const CACHE = 'decorify-orders-eab113462a';
-const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './config.js', './insights-core.js?v=7d2ee29368', './supabase-2.45.4.js', './inter-var.woff2'];
+const CACHE = 'decorify-orders-ef732a8ee1';
+const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './config.js', './insights-core.js?v=4515d261dd', './supabase-2.45.4.js', './inter-var.woff2'];
 self.addEventListener('install', e => {
   // all-or-nothing: if any file fails, this version doesn't install and the working one stays
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));

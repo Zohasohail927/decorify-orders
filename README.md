@@ -127,3 +127,36 @@ Root causes found and fixed:
 Also: the bottom tab bar steps aside while the keyboard is up (no floating bar); sticky bars leave room for focused fields (`scroll-padding`); each screen keeps its scroll position and tapping the current tab returns to the top; safe-area insets on all sides (Dynamic Island in landscape); no stuck hover states after a tap; calm screen fade; `100vh` fallbacks for `dvh`; long order lists drawn 150 at a time; build fingerprint on the core script, the offline cache and the Settings version line, so old and new files are never mixed; no reloads forced under the user.
 
 Tests: `tests/mobile.js` (iPhone walk-through at 390/402/430/440 px, landscape, 150% and 200% zoom), `tests/audit.js`, plus all earlier suites. These run in Chromium with mobile emulation, not on a real iPhone.
+
+## Version 6.4 (selling price per unit or total / bulk)
+
+Each order piece now has a **Price entry method**, just like the cost:
+
+- **Per unit** — quantity × selling price per unit (as before).
+- **Total / bulk** — enter the quantity and the total selling price for the lot (e.g. 12 for Rs 60). The app shows the calculated price per unit. The total is kept exactly, so "3 for Rs 100" stays Rs 100, not Rs 99.99.
+- Changing the quantity on a bulk line keeps the price per unit and updates the total, with a note saying so. Switching method keeps the same total.
+- Order detail shows bulk pieces as "Rs 60.00 for the lot · Rs 5.00 each".
+- Old orders are unchanged: per-unit pieces are saved in exactly the same shape as before. Bulk pieces add `price_mode` and `price_total` inside the order's pieces — no database change is needed for orders.
+
+Products can also have a bulk selling price ("12 for Rs 60"). Adding such a product to an order fills in a bulk line. The bulk figures on a **product** are only remembered after migration 4 (`supabase-migration-4.sql`, which now also adds `price_batch_qty` and `price_batch_total`). Before it is run, the app saves the product's price per unit and says so.
+
+Also: the per-piece Sales / Cost / Profit / Margin summary shows as 2 × 2 on phones so large amounts are never cut off; the Refund button, the money box and the theme switch no longer spill sideways at 200% text zoom.
+
+Tests: `tests/e2e-pricing.js` (new), 12 new pricing unit tests in `tests/costing.test.js`, plus all earlier suites, with and without migration 4. Results: `tests/e2e-results.txt`. Chromium mobile emulation, not a real iPhone.
+
+## Version 6.5 (easy order cancelling)
+
+Every order now has a **Cancel order** button at the bottom. Nothing is ever deleted: the order and its payments stay in the records under Cancelled, and **Reopen order** brings it back.
+
+- When an order is cancelled, its sales and cost both count as nil: Home, Insights and the profit & loss leave it out. The cost figures stay on the order, marked "not counted (cancelled)", so reopening restores them.
+- If the customer has paid, the app asks what happens to the money:
+  - **Refund**: opens the refund screen with the amount filled in.
+  - **Keep**: the money is a cancellation charge. It shows in the profit & loss as "Kept from cancelled orders" on the cancel date (it is real income).
+  - **Decide later**: it shows as "Refund owed to customer" until a refund is recorded.
+- An optional reason ("wedding postponed") and the cancel date are saved.
+
+Database: the reason, the cancel date and the **Keep** choice need migration 5 (`supabase-migration-5.sql`: three optional columns on orders; undo with `supabase-migration-5-rollback.sql`). Before it is run, cancelling, refunds and "decide later" all work; Keep and the reason box are hidden.
+
+Also: dialogs stay within the screen and scroll at 150–200% text zoom.
+
+Tests: `tests/e2e-cancel.js` (new, with and without migration 5), 8 new cancelling tests in `tests/finance.test.js`, `tests/dialog-fit.js`, plus all earlier suites. Results: `tests/e2e-results.txt`. Chromium mobile emulation, not a real iPhone.

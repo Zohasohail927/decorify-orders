@@ -214,6 +214,7 @@ html[data-theme=dark] .seg{background:var(--surface-2);box-shadow:inset 0 0 0 1p
 .seg button.on{background:var(--surface);color:var(--text);box-shadow:0 1px 2px rgba(15,23,42,.08),0 1px 1px rgba(15,23,42,.04)}
 html[data-theme=dark] .seg button.on{background:var(--surface-3);box-shadow:0 1px 2px rgba(0,0,0,.3)}
 .seg.full{display:flex}.seg.full button{flex:1}
+@media (max-width:300px){.seg.full{flex-wrap:wrap}.seg.full button{flex:1 1 auto}}
 .seg.on-navy{background:var(--navy-fill);box-shadow:none}
 .seg.on-navy button{color:var(--on-navy-2);min-height:30px;padding:0 11px;font-size:12.5px}
 .seg.on-navy button.on{background:#fff;color:#0B1F3A;box-shadow:0 1px 2px rgba(0,0,0,.2)}
@@ -461,7 +462,9 @@ html[data-theme=dark] .stepper button i{background:var(--border)}
 .stepper button.done i{background:var(--primary);opacity:.55}
 .stepper button.on{color:var(--text)}
 .stepper button.on i{background:var(--primary)}
-.cx-note{margin:4px 20px 0;font-size:13px;color:var(--danger);font-weight:500}
+.cx-note{margin:10px 20px 0;padding:10px 12px;border-radius:var(--r-m);background:var(--danger-soft);font-size:13.5px;color:var(--text);line-height:1.45}
+.cx-note b{color:var(--danger);font-weight:650}
+.d-cancel{padding:0 20px 8px}.d-cancel .btn{width:100%}
 .dsec{padding:16px 20px;border-top:1px solid var(--divider)}
 .dsec>.lbl{margin-bottom:10px}
 .kvr{display:flex;justify-content:space-between;gap:14px;font-size:14px;padding:5px 0}
@@ -476,9 +479,9 @@ html[data-theme=dark] .stepper button i{background:var(--border)}
 .d-actions .btn.primary{flex-basis:100%;order:-1;min-height:48px}
 .dpanel-empty{padding:48px 24px}
 .money{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-l);padding:14px 16px 14px}
-.money .mr{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:14px;padding:3px 0}
+.money .mr{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:2px 12px;font-size:14px;padding:3px 0}
 .money .mr span{color:var(--text-2)}
-.money .mr b{font-weight:600}
+.money .mr b{font-weight:600;margin-left:auto}
 .money .mr.big{margin-top:8px;padding-top:12px;border-top:1px solid var(--border)}
 .money .mr.big span{font-weight:600;color:var(--text)}
 .money .mr.big b{font-size:24px;font-weight:650;letter-spacing:-.03em}
@@ -486,8 +489,8 @@ html[data-theme=dark] .stepper button i{background:var(--border)}
 .paybar{height:6px;border-radius:6px;background:var(--surface-3);overflow:hidden;margin-top:12px}
 html[data-theme=dark] .paybar{background:var(--border)}
 .paybar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--primary),var(--d-dn));transition:width var(--t3) var(--ease)}
-.payact{display:flex;gap:8px;margin-top:12px}
-.payact .btn{flex:1}
+.payact{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.payact .btn{flex:1 1 auto;min-width:0}
 .ph{margin-top:12px}
 .ph-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--divider)}
 .ph-row:first-child{border-top:0}
@@ -539,8 +542,9 @@ html[data-theme=dark] .paybar{background:var(--border)}
 html[data-theme=dark] .dialog{border:1px solid var(--border-strong)}
 .dialog.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
 .dialog h3{margin:0 0 6px;font-size:18px;font-weight:650;letter-spacing:-.02em;line-height:1.3}
-.dialog p{margin:0 0 20px;color:var(--text-2);font-size:14px;line-height:1.5}
-.dialog .row{display:flex;gap:10px}.dialog .row .btn{flex:1}
+.dialog p{margin:0 0 20px;color:var(--text-2);font-size:14px;line-height:1.5;white-space:pre-line}
+.dialog .row{display:flex;gap:10px}.dialog .row .btn{flex:1 1 130px;min-width:0;white-space:normal;text-align:center;line-height:1.25}
+.dialog{max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain}
 .toast{position:fixed;left:50%;top:calc(64px + env(safe-area-inset-top));transform:translate(-50%,-8px) scale(.98);background:var(--toast-bg);color:var(--toast-fg);border:1px solid var(--toast-line);padding:11px 16px 11px 12px;border-radius:var(--r-m);font-size:14px;font-weight:500;
   opacity:0;transition:opacity var(--t2) var(--ease),transform var(--t2) var(--ease);pointer-events:none;z-index:60;display:flex;align-items:center;gap:10px;box-shadow:var(--sh-3);max-width:min(92vw,440px)}
 .toast.show{opacity:1;transform:translate(-50%,0) scale(1)}
@@ -615,16 +619,21 @@ html[data-theme=light] .line .cm-seg{background:var(--bg-2)}
 .line .lg .calc{align-self:end}
 .lnk{border:0;background:none;padding:6px 0 0;font-size:12.5px;font-weight:600;color:var(--primary);text-align:left;min-height:28px}
 .calc .lnk{position:absolute;right:10px;bottom:calc(100% + 4px);padding:0;min-height:0}
-.lnote{display:flex;align-items:flex-start;gap:6px;font-size:12.5px;line-height:1.45;color:var(--muted);margin-top:8px}
+.lnote{display:flex;flex-direction:column;gap:4px;font-size:12.5px;line-height:1.45;color:var(--muted);margin-top:8px}
+.lnote>span{display:flex;align-items:flex-start;gap:6px}
 .lnote:empty{display:none}
 .lnote .ic{margin-top:2px;color:var(--accent-ink)}
 .lnote .warnline{margin-top:0}
 .lsum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px -12px 0;padding:10px 12px;border-top:1px solid var(--border)}
+@media (max-width:440px){.lsum{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:10px}}
 .lsum div{min-width:0}
 .lsum span{display:block;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
 .lsum b{display:block;font-size:14px;font-weight:650;letter-spacing:-.015em;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lsum b.neg{color:var(--danger)}
 .lsum .miss{grid-column:2/-1;align-self:center;font-size:12.5px;font-weight:500;line-height:1.35;color:var(--warning)}
+.pcalc{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;padding:8px 12px;border-radius:var(--r-m);background:var(--accent-2);border:1px dashed var(--accent)}
+.pcalc span{font-size:12px;font-weight:600;color:var(--accent-ink)}
+.pcalc b{font-size:15px;font-weight:650;letter-spacing:-.015em;white-space:nowrap}
 .calcbox{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;padding:12px 14px;border-radius:var(--r-m);background:var(--accent-2);border:1px dashed var(--accent)}
 .calcbox[hidden]{display:none}
 .calcbox span{font-size:13px;font-weight:600;color:var(--accent-ink)}
@@ -1542,7 +1551,7 @@ h1,h2,h3,.hello p,.note,.sub,.empty p,.card-note,.say,.basis-body,.kvr span,.lno
     <div class="item"><div><div style="font-weight:700">Payments</div><div class="d">Every payment, refund and correction (CSV)</div></div><button class="btn secondary sm" data-export="payments"><svg class="ic sm"><use href="#i-down"/></svg>CSV</button></div>
     <div class="item"><div><div style="font-weight:700">Expenses</div><div class="d">Business expenses, stock and drawings (CSV)</div></div><button class="btn secondary sm" data-export="expenses"><svg class="ic sm"><use href="#i-down"/></svg>CSV</button></div>
     <div class="item"><div><div style="font-weight:700">Customers</div><div class="d">Contact list with order totals (CSV)</div></div><button class="btn secondary sm" data-export="customers"><svg class="ic sm"><use href="#i-down"/></svg>CSV</button></div>
-    <div class="item"><div><div style="font-weight:700">Decorify Orders</div><div class="d">Version 6.3 · Navy · build eab113462a</div></div></div>
+    <div class="item"><div><div style="font-weight:700">Decorify Orders</div><div class="d">Version 6.5 · Navy · build ef732a8ee1</div></div></div>
   </div>
   </div>
 </section>
@@ -1593,7 +1602,14 @@ h1,h2,h3,.hello p,.note,.sub,.empty p,.card-note,.say,.basis-body,.kvr span,.lno
     <h3 id="p-title">New product</h3>
     <p class="note" style="margin:0">Filled in when you add this product to an order. You can still change them on each order.</p>
     <div class="field"><label for="p-name">Product name<span class="req">*</span></label><input class="input" id="p-name" placeholder="e.g. Wedding favour cone" autocapitalize="sentences" enterkeyhint="next"><div class="hint" id="h-pname">Please enter a name</div></div>
-    <div class="field"><label for="p-price">Selling price / unit</label><div class="prefix"><span data-cur>Rs</span><input class="input num" id="p-price" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></div></div>
+    <div class="cm"><span class="cm-l" id="p-prmode-l">Price entry method</span>
+      <div class="seg cm-seg" id="p-prmode" role="radiogroup" aria-labelledby="p-prmode-l"><button type="button" role="radio" data-prm="unit" class="on" aria-checked="true">Per unit</button><button type="button" role="radio" data-prm="total" aria-checked="false">Total / bulk</button></div></div>
+    <div id="p-punit-f" class="field"><label for="p-price">Selling price / unit</label><div class="prefix"><span data-cur>Rs</span><input class="input num" id="p-price" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></div></div>
+    <div id="p-pbulk-f" class="row2" hidden>
+      <div class="field"><label for="p-pbqty">Bulk quantity</label><input class="input num" id="p-pbqty" type="number" inputmode="numeric" min="1" step="1" placeholder="e.g. 12"></div>
+      <div class="field"><label for="p-pbtotal">Total selling price</label><div class="prefix"><span data-cur>Rs</span><input class="input num" id="p-pbtotal" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 60"></div></div>
+    </div>
+    <div class="calcbox" id="p-pcalc" hidden><span>Calculated price / unit</span><b class="num" id="p-pcalc-v">—</b></div>
     <div class="cm"><span class="cm-l" id="p-mode-l">Cost entry method</span>
       <div class="seg cm-seg" id="p-mode" role="radiogroup" aria-labelledby="p-mode-l"><button type="button" role="radio" data-pmode="unit" class="on" aria-checked="true">Per unit</button><button type="button" role="radio" data-pmode="total" aria-checked="false">Total / batch</button></div></div>
     <div id="p-unit-f" class="field"><label for="p-cost">Cost per unit</label><div class="prefix"><span data-cur>Rs</span><input class="input num" id="p-cost" type="number" inputmode="decimal" min="0" step="any" placeholder="Not known"></div></div>
@@ -1671,13 +1687,13 @@ h1,h2,h3,.hello p,.note,.sub,.empty p,.card-note,.say,.basis-body,.kvr span,.lno
 <div class="toast" id="toast" role="status" aria-live="polite"><svg class="ic"><use href="#i-check"/></svg><span id="toast-text"></span></div>
 
 <script src="config.js"></script>
-<script src="insights-core.js?v=7d2ee29368"></script>
+<script src="insights-core.js?v=4515d261dd"></script>
 <script src="supabase-2.45.4.js"></script>
 <script>
 /* ======================================================================
    DECORIFY ORDERS v6 · STATE & HELPERS
    ====================================================================== */
-const APP_BUILD='eab113462a';
+const APP_BUILD='ef732a8ee1';
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const DI = window.DSInsights;
 const LS = { orders:'ds_orders', products:'ds_products', customers:'ds_customers', payments:'ds_payments', expenses:'ds_expenses',
@@ -1706,7 +1722,16 @@ const fmtN = n => (n<0?'−':'') + Math.abs(Math.round(+n||0)).toLocaleString('e
 /* costing displays: always to the paisa; a unit cost that isn't a whole paisa shows 4 decimals */
 const fmt2 = n => settings.currency + ' ' + (n<0?'−':'') + Math.abs(+n||0).toLocaleString('en-PK',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtUnit = n => { n=+n; return Math.abs(n*100-Math.round(n*100))<1e-6 ? fmt2(n) : '≈ '+settings.currency+' '+n.toLocaleString('en-PK',{minimumFractionDigits:4,maximumFractionDigits:4}) };
-let prodBatch = true;   // false until the products table has the batch columns (supabase-migration-4.sql)
+let orderCancel = true;  // false until the orders table has cancelled_on / cancel_reason / cancel_kept (supabase-migration-5.sql)
+const CANCEL_COLS=['cancelled_on','cancel_reason','cancel_kept'];
+/* extra fields to save when an order's stage changes into or out of Cancelled */
+function cancelFields(o,s,extra){
+  if(!orderCancel) return {};
+  if(s==='cancelled'&&o.status!=='cancelled') return {cancelled_on:today(),cancel_reason:null,cancel_kept:null,...(extra||{})};
+  if(s!=='cancelled'&&o.status==='cancelled'&&(o.cancelled_on||o.cancel_reason||o.cancel_kept!=null)) return {cancelled_on:null,cancel_reason:null,cancel_kept:null};
+  return {};
+}
+let prodBatch = true;   // false until the products table has the batch / bulk columns (supabase-migration-4.sql)
 const num = v => +(v||0);
 const blank = v => v===null || v===undefined || v==='';
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -1837,8 +1862,10 @@ const DB = {
     if(!isCloud()){const L=TABLES[t]();const cur=L.find(x=>x.id===id);if(!cur)return {gone:true};if(version!=null&&cur.version!==version)return {conflict:true,row:cur};
       const r={...cur,...patch,version:(cur.version||1)+1,updated_at:new Date().toISOString()};putRow(t,r);reindex();cacheSave();return {row:r}}
     try{
-      let q=sb.from(t).update(clean(t,patch)).eq('id',id); if(version!=null) q=q.eq('version',version);
-      const {data,error}=await q.select();
+      const run=pt=>{let q=sb.from(t).update(clean(t,pt)).eq('id',id); if(version!=null) q=q.eq('version',version); return q.select()};
+      let {data,error}=await run(patch);
+      if(error&&t==='orders'&&/cancelled_on|cancel_reason|cancel_kept/.test(error.message||'')){ // database not updated yet: save without them
+        orderCancel=false; const p2={...patch}; CANCEL_COLS.forEach(k=>delete p2[k]); ({data,error}=await run(p2)); }
       if(error) return {error:friendly(error)};
       if(data&&data.length){putRow(t,data[0]);reindex();cacheSave();return {row:data[0]}}
       const {data:curr}=await sb.from(t).select('*').eq('id',id).maybeSingle();
@@ -1848,9 +1875,9 @@ const DB = {
   },
   async upsertProduct(p){const g=guard();if(g)return {error:g};
     if(!isCloud()){putRow('products',p);cacheSave();return {row:p}}
-    const noBatch=x=>{const c={...x};delete c.cost_batch_qty;delete c.cost_batch_total;return c};
+    const noBatch=x=>{const c={...x};delete c.cost_batch_qty;delete c.cost_batch_total;delete c.price_batch_qty;delete c.price_batch_total;return c};
     try{let {data,error}=await sb.from('products').upsert(prodBatch?p:noBatch(p)).select().single();
-      if(error&&prodBatch&&/cost_batch/.test(error.message||'')){prodBatch=false;({data,error}=await sb.from('products').upsert(noBatch(p)).select().single())}
+      if(error&&prodBatch&&/cost_batch|price_batch/.test(error.message||'')){prodBatch=false;({data,error}=await sb.from('products').upsert(noBatch(p)).select().single())}
       if(error)return {error:friendly(error)};putRow('products',data);cacheSave();return {row:data}}catch(e){return {error:friendly(e)}}},
   async deleteProduct(id){const g=guard();if(g)return {error:g};
     if(!isCloud()){dropRow('products',id);cacheSave();return {ok:true}}
@@ -1897,8 +1924,10 @@ async function pull(){
     try{res.orders=await fetchAll('orders')}catch(e){res.orders=[]}
   }
   for(const t of Object.keys(jobs)) setList(t,res[t]||[]);
-  if(products.length) prodBatch='cost_batch_qty' in products[0];
-  else { try{const {error}=await sb.from('products').select('cost_batch_qty').limit(1);prodBatch=!error}catch(e){} }
+  if(orders.length) orderCancel='cancelled_on' in orders[0];
+  else { try{const {error}=await sb.from('orders').select('cancelled_on,cancel_reason,cancel_kept').limit(1);orderCancel=!error}catch(e){} }
+  if(products.length) prodBatch='cost_batch_qty' in products[0] && 'price_batch_qty' in products[0];
+  else { try{const {error}=await sb.from('products').select('cost_batch_qty,price_batch_qty').limit(1);prodBatch=!error}catch(e){} }
   schemaMissing=missing; reindex(); cacheSave(); lastPull=Date.now();
   setSync('on','Live'); netbar(); render();
   if(current){const o=orders.find(x=>x.id===current.id);o?fillSheet(o):closeSheetEl('#sheet')}
@@ -2105,6 +2134,7 @@ function renderPanel(){
    ====================================================================== */
 function kv(k,v,cls=''){return v===''||v==null?'':`<div class="kvr"><span>${k}</span><b class="${cls}">${v}</b></div>`}
 function costLine(o){
+  if(o.status==='cancelled') return kv('Direct cost',`<span style="color:var(--text-muted)">${costKnown(o)?fmt(o.cost)+' · ':''}not counted (cancelled)</span>`)+kv('Order profit','<span style="color:var(--text-muted)">Not counted (cancelled)</span>');
   const ls=getLines(o);
   const dc=num(o.delivery_cost);
   const split = dc ? kv('Materials cost', costKnown(o)?fmt(num(o.cost)-dc):'<span style="color:var(--warning)">Not entered yet</span>','num')+kv('Delivery cost',fmt(dc),'num') : '';
@@ -2120,16 +2150,17 @@ function detailHTML(o){
   const pays=allPaysFor(o.id);
   const pct = m.total>0? Math.max(0,Math.min(100, m.net/m.total*100)) : (m.net>0?100:0);
   const bigCls = m.status==='credit'?'credit':m.balance>0?'due':'paid';
-  const bigLbl = m.status==='credit'?(o.status==='cancelled'?'Refund owed to customer':'Customer credit'):m.balance>0?'Balance due':'Paid in full';
+  const cx=o.status==='cancelled';
+  const bigLbl = m.status==='credit'?(cx?'Refund owed to customer':'Customer credit'):m.balance>0?'Balance due':cx&&m.total===0?'Nothing to collect':'Paid in full';
   const canPay = !(o.status==='cancelled'&&m.net<=0);
   return `<div class="dh st-${stageOf(o)}"><div class="dh-top"><span class="pill">${LABEL[o.status]}</span>${payPill(m)}</div><h3>${esc(o.customer_name)}</h3>
       <div class="meta">Order ${esc(o.id.slice(0,8).toUpperCase())} · placed ${fmtDate(o.order_date||o.created_at?.slice(0,10))}${o.source?' · '+esc(o.source):''}</div></div>
     <div class="stepper" role="group" aria-label="Order stage">${ORDER.map((s,i)=>`<button class="st-${s} ${stageOf(o)===s?'on':''} ${idx>i?'done':''}" data-st="${s}" aria-pressed="${stageOf(o)===s}"><i></i>${LABEL[s]}</button>`).join('')}</div>
-    ${o.status==='cancelled'?`<div class="cx-note">This order is cancelled. Tap a stage above to reopen it.</div>`:''}
+    ${cx?`<div class="cx-note"><b>Cancelled${o.cancelled_on?' on '+fmtDate(o.cancelled_on):''}.</b>${o.cancel_reason?' '+esc(o.cancel_reason)+'.':''} Its sales and cost don't count in your profit.${m.total>0?` ${fmt(m.total)} kept as a cancellation charge.`:''}</div>`:''}
     ${o.notes?`<div class="dsec"><div class="card-note">${esc(o.notes)}</div></div>`:''}
     <div class="dsec"><div class="lbl">Payments</div>
       <div class="money">
-        <div class="mr"><span>Order total</span><b class="num">${fmt(m.total)}</b></div>
+        <div class="mr"><span>${cx?(m.total>0?'Cancellation charge':'Order total after cancelling'):'Order total'}</span><b class="num">${fmt(m.total)}</b></div>
         <div class="mr"><span>Received${m.refunded?` (after ${fmt(m.refunded)} refunded)`:''}</span><b class="num">${fmt(m.net)}</b></div>
         <div class="mr big ${bigCls}"><span>${bigLbl}</span><b class="num">${m.balance===0?'✓':fmt(Math.abs(m.balance))}</b></div>
         ${m.total>0?`<div class="paybar" aria-hidden="true"><i style="width:${pct}%"></i></div>`:''}
@@ -2141,7 +2172,7 @@ function detailHTML(o){
           ${p.voided_at?'':`<button class="more-b" data-paymenu="${esc(p.id)}" aria-label="Correct this payment">${ic('i-more','sm')}</button>`}</div>`).join('')
         : `<div class="ph-empty">No payments recorded yet.</div>`}</div>
     </div>
-    <div class="dsec"><div class="lbl">Pieces</div>${ls.length? ls.map(l=>{const c=DI.lineCost(l),u=DI.lineUnitCost(l),bt=DI.lineMode(l)==='total';return `<div class="pcl"><div class="kvr"><span>${num(l.qty).toLocaleString('en-PK')} × ${esc(l.name)}</span><b class="num">${fmt2(num(l.qty)*num(l.price))}</b></div><div class="pcl-s">${fmt2(l.price)} each · ${c==null?'<span class="warn">cost not entered</span>':`cost ${fmt2(c)}${bt?' for the batch':''} · ${fmtUnit(u)} each`}</div></div>`}).join('') : kv('Items',esc(o.items))}${kv('Total pieces',esc(o.quantity))}
+    <div class="dsec"><div class="lbl">Pieces</div>${ls.length? ls.map(l=>{const c=DI.lineCost(l),u=DI.lineUnitCost(l),bt=DI.lineMode(l)==='total';return `<div class="pcl"><div class="kvr"><span>${num(l.qty).toLocaleString('en-PK')} × ${esc(l.name)}</span><b class="num">${fmt2(DI.lineSale(l))}</b></div><div class="pcl-s">${DI.linePriceMode(l)==='total'?`${fmt2(DI.lineSale(l))} for the lot · ${fmtUnit(DI.lineUnitPrice(l)??0)} each`:`${fmt2(l.price)} each`} · ${c==null?'<span class="warn">cost not entered</span>':`cost ${fmt2(c)}${bt?' for the batch':''} · ${fmtUnit(u)} each`}</div></div>`}).join('') : kv('Items',esc(o.items))}${kv('Total pieces',esc(o.quantity))}
       <div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--border-strong)">${costLine(o)}</div></div>
     <div class="dsec"><div class="lbl">Customer &amp; delivery</div>
       ${c?kv('Customer',`<button class="link" data-cust="${esc(c.id)}" style="border:0;background:none;padding:0;color:var(--primary);font-weight:700">${esc(c.name)} →</button>`):''}
@@ -2150,9 +2181,10 @@ function detailHTML(o){
       ${o.status==='delivered'?kv('Delivered on',o.delivered_on?fmtDate(o.delivered_on,true):'<span style="color:var(--text-muted)">Not recorded</span>'):''}</div>
     ${isCloud()?`<div class="dsec"><div class="lbl">Activity</div><div class="activity" data-act="${esc(o.id)}"><span style="color:var(--text-muted)">Loading…</span></div></div>`:''}
     <div class="d-actions">${nxt?`<button class="btn primary" data-next="${esc(o.id)}">${ic('i-check')}Mark ${LABEL[nxt]}</button>`:''}
-      ${wa?`<a class="btn secondary" href="${esc(wa)}" target="_blank" rel="noopener">${ic('i-chat')}WhatsApp</a>`:''}<button class="btn secondary" data-edit="${esc(o.id)}">${ic('i-edit')}Edit</button></div>`;
+      ${wa?`<a class="btn secondary" href="${esc(wa)}" target="_blank" rel="noopener">${ic('i-chat')}WhatsApp</a>`:''}<button class="btn secondary" data-edit="${esc(o.id)}">${ic('i-edit')}Edit</button></div>
+    <div class="d-cancel">${cx?`<button class="btn secondary" data-st="new">${ic('i-undo')}Reopen order</button>`:`<button class="btn danger" data-cancel="${esc(o.id)}">${ic('i-x')}Cancel order</button>`}</div>`;
 }
-const FIELD_NAMES={status:'stage',sale_price:'total',cost:'cost',customer_name:'name',phone:'phone',address:'address',delivery_date:'planned delivery',delivered_on:'delivery date',order_date:'order date',line_items:'pieces',notes:'notes',items:'pieces',quantity:'quantity',source:'lead source',customer_id:'customer link',deleted_at:'removed'};
+const FIELD_NAMES={status:'stage',sale_price:'total',cost:'cost',customer_name:'name',phone:'phone',address:'address',delivery_date:'planned delivery',delivered_on:'delivery date',order_date:'order date',line_items:'pieces',notes:'notes',items:'pieces',quantity:'quantity',source:'lead source',customer_id:'customer link',deleted_at:'removed',cancel_reason:'cancel reason',cancel_kept:'money kept',cancelled_on:'cancel date'};
 function describe(a){
   const who=esc((a.user_email||'').split('@')[0]||'Someone'), when=fmtWhen(a.at), ch=a.changes||{};
   let what;
@@ -2184,13 +2216,40 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('#dialog').cla
 
 async function setStatus(o,s){
   if(o.status===s)return;
-  const patch={status:s, delivered_on: s==='delivered' ? (o.delivered_on||today()) : null};
+  if(s==='cancelled') return cancelOrderFlow(o);
+  const patch={status:s, delivered_on: s==='delivered' ? (o.delivered_on||today()) : null, ...cancelFields(o,s)};
   const r=await DB.update('orders',o.id,patch,null);
   if(r.error){toast(r.error,'err');return}
   if(r.gone){toast('This order was removed on another phone.','err');closeSheetEl('#sheet');render();return}
   const fresh=r.row, m=money(fresh);
-  toast(s==='delivered'&&m.balance>0?`Marked Delivered · ${fmt(m.balance)} still to collect`:'Marked '+LABEL[s]);
+  toast(s==='delivered'&&m.balance>0?`Marked Delivered · ${fmt(m.balance)} still to collect`:o.status==='cancelled'?'Order reopened · '+LABEL[s]:'Marked '+LABEL[s]);
   render(); if(current)fillSheet(fresh);
+}
+/* Cancel an order: nothing is deleted. Sales and cost stop counting; money received is refunded, kept, or left as owed back. */
+async function cancelOrderFlow(o){
+  if(o.status==='cancelled') return;
+  const m=money(o), net=m.net, sale=num(o.sale_price), cost=o.cost==null?null:num(o.cost);
+  const lose=`Its sales (${fmt(sale)})${cost?` and cost (${fmt(cost)})`:''} will no longer count in your profit. Nothing is deleted: the order and its payments stay in your records under Cancelled, and you can reopen it.`;
+  const withReason=orderCancel, input=withReason?{placeholder:'Reason (optional), e.g. wedding postponed'}:null;
+  let res;
+  if(net>0){
+    const opts=[`Refund: record the money you give back.`, ...(orderCancel?[`Keep: it counts as a cancellation charge (income).`]:[]), `Decide later: it shows as owed back to ${o.customer_name||'the customer'}.`];
+    res=await dlg({title:'Cancel this order?',text:`${lose}\n\n${o.customer_name||'The customer'} has paid ${fmt(net)}.\n${opts.join('\n')}`,input,
+      buttons:[{label:`Refund ${fmt(net)}`,value:'refund',cls:'primary'},...(orderCancel?[{label:`Keep ${fmt(net)}`,value:'keep'}]:[]),{label:'Decide later',value:'later'},{label:"Don't cancel",value:null,cancel:true}]});
+  } else {
+    res=await dlg({title:'Cancel this order?',text:lose,input,buttons:[{label:"Don't cancel",value:null,cancel:true},{label:'Cancel order',value:'cancel',cls:'danger'}]});
+  }
+  const v=input?res?.value:res, reason=input?(res?.text||null):null;
+  if(!v) return;
+  const extra={}; if(reason) extra.cancel_reason=reason.slice(0,300); if(v==='keep') extra.cancel_kept=net;
+  const r=await DB.update('orders',o.id,{status:'cancelled',delivered_on:null,...cancelFields(o,'cancelled',extra)},null);
+  if(r.error){toast(r.error,'err');return}
+  if(r.gone){toast('This order was removed on another phone.','err');closeSheetEl('#sheet');render();return}
+  const fresh=r.row;
+  render(); if(current)fillSheet(fresh);
+  if(v==='keep'&&!(num(fresh.cancel_kept)>0)) toast(`Order cancelled. ${fmt(net)} shows as owed back: keeping money needs the next database update.`,'err',6000);
+  else toast(v==='keep'?`Order cancelled · ${fmt(net)} kept`:v==='later'?`Order cancelled · ${fmt(net)} to refund`:'Order cancelled');
+  if(v==='refund') openPay(o.id,'refund');
 }
 /* ======================================================================
    NAVIGATION & DELEGATED EVENTS
@@ -2222,6 +2281,7 @@ document.body.addEventListener('click',async e=>{
   const g=e.target.closest('[data-go]'); if(g){closeSheetEl('#sheet');closeSheetEl('#csheet');closeSheetEl('#moresheet');go(g.dataset.go);return}
   const q=e.target.closest('[data-q]'); if(q){filter=q.dataset.q;renderOrders();go('orders');return}
   const st=e.target.closest('[data-st]'); if(st){const o=orders.find(x=>x.id===(current?.id||selected));if(o)setStatus(o,st.dataset.st);return}
+  const cn=e.target.closest('[data-cancel]'); if(cn){const o=orders.find(x=>x.id===cn.dataset.cancel);if(o)cancelOrderFlow(o);return}
   const nx=e.target.closest('[data-next]'); if(nx){const o=orders.find(x=>x.id===nx.dataset.next);if(o&&NEXT[o.status])setStatus(o,NEXT[o.status]);return}
   const ed=e.target.closest('[data-edit]'); if(ed){const o=orders.find(x=>x.id===ed.dataset.edit);closeSheetEl('#sheet');openForm(o);go('form');return}
   const py=e.target.closest('[data-pay]'); if(py){openPay(py.dataset.pay,'payment');return}
@@ -2319,22 +2379,27 @@ function renderTiles(){
   const ps=[...products].sort((a,b)=>a.name.localeCompare(b.name));
   $('#ptiles').innerHTML = ps.map(p=>{const l=lines.find(x=>x.product_id===p.id);
     return `<div class="prod ${l?'sel':''}" data-tile="${esc(p.id)}" role="button" tabindex="0" aria-label="Add ${esc(p.name)}">${l?`<span class="qty"><i data-dec="${esc(p.id)}" aria-label="Fewer">−</i><span class="num">${num(l.qty)}</span><i data-inc="${esc(p.id)}" aria-label="More">+</i></span>`:''}
-      <span class="em">${ic(pIcon(p.name))}</span><b>${esc(p.name)}</b><span class="pr num">${fmt(p.price)}</span></div>`}).join('')
+      <span class="em">${ic(pIcon(p.name))}</span><b>${esc(p.name)}</b><span class="pr num">${prodPriceText(p,fmt)}</span></div>`}).join('')
     + `<button type="button" class="prod custom" id="addcustom"><span class="em">${ic('i-plus')}</span><b style="font-size:13px">Custom piece</b><span class="pr">Type any item</span></button>`;
 }
 const CS=DI.costing;
 const inVal = v => blank(v)?'':String(+(+v).toFixed(4));
 function lineStd(l){if(!l.product_id)return null;const p=products.find(x=>x.id===l.product_id);return p?CS.productUnitCost(p):null}
+function segHTML(id,label,attr,m,totalLabel){return `<div class="cm"><span class="cm-l" id="${id}">${label}</span>
+      <div class="seg cm-seg" role="radiogroup" aria-labelledby="${id}"><button type="button" role="radio" ${attr}="unit" class="${m==='unit'?'on':''}" aria-checked="${m==='unit'}">Per unit</button><button type="button" role="radio" ${attr}="total" class="${m==='total'?'on':''}" aria-checked="${m==='total'}">${totalLabel}</button></div></div>`}
 function lineHTML(l,i){
-  const m=DI.lineMode(l), cur=esc(settings.currency);
+  const m=DI.lineMode(l), pm=DI.linePriceMode(l), cur=esc(settings.currency);
   return `<div class="line" data-i="${i}">
     <div class="lh"><input class="input" data-k="name" value="${esc(l.name)}" placeholder="Item name" aria-label="Item name" autocapitalize="sentences" enterkeyhint="next"><button class="ib" type="button" data-rm="${i}" aria-label="Remove item">${ic('i-x','sm')}</button></div>
+    ${segHTML('lpm'+i,'Price entry method','data-prmode',pm,'Total / bulk')}
     <div class="lg">
       <div><label for="lq${i}">Quantity</label><input id="lq${i}" class="input num" data-k="qty" type="number" inputmode="numeric" enterkeyhint="done" min="1" step="1" value="${blank(l.qty)?'':esc(l.qty)}"></div>
-      <div><label for="lp${i}">Selling price / unit</label><div class="prefix"><span>${cur}</span><input id="lp${i}" class="input num" data-k="price" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" value="${esc(inVal(l.price))}" placeholder="0"></div></div>
+      ${pm==='unit'
+      ? `<div><label for="lp${i}">Selling price / unit</label><div class="prefix"><span>${cur}</span><input id="lp${i}" class="input num" data-k="price" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" value="${esc(inVal(l.price))}" placeholder="0"></div></div>`
+      : `<div><label for="lpt${i}">Total selling price</label><div class="prefix"><span>${cur}</span><input id="lpt${i}" class="input num" data-k="price_total" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" value="${blank(l.price_total)?'':esc(l.price_total)}" placeholder="0"></div></div>`}
     </div>
-    <div class="cm"><span class="cm-l" id="lcm${i}">Cost entry method</span>
-      <div class="seg cm-seg" role="radiogroup" aria-labelledby="lcm${i}"><button type="button" role="radio" data-mode="unit" class="${m==='unit'?'on':''}" aria-checked="${m==='unit'}">Per unit</button><button type="button" role="radio" data-mode="total" class="${m==='total'?'on':''}" aria-checked="${m==='total'}">Total / batch</button></div></div>
+    ${pm==='total'?`<div class="pcalc"><span>Calculated price / unit</span><b class="num" data-o="punit">—</b></div>`:''}
+    ${segHTML('lcm'+i,'Cost entry method','data-mode',m,'Total / batch')}
     <div class="lg">${m==='unit'
       ? `<div><label for="lc${i}">Cost per unit</label><div class="prefix"><span>${cur}</span><input id="lc${i}" class="input num" data-k="cost" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" value="${esc(inVal(l.cost))}" placeholder="Not known"></div></div>
          <div class="calc"><span class="cl" data-o="tl">Total cost</span><b class="cv num" data-o="total">—</b><button type="button" class="lnk" data-mode="total">Edit total cost</button></div>`
@@ -2346,20 +2411,22 @@ function lineHTML(l,i){
   </div>`;
 }
 function lineRefresh(r,l,force){
-  const m=DI.lineMode(l), sale=DI.round2(num(l.qty)*num(l.price)), cost=DI.lineCost(l), unit=DI.lineUnitCost(l), err=CS.error(l), std=lineStd(l);
+  const m=DI.lineMode(l), sale=DI.lineSale(l), cost=DI.lineCost(l), unit=DI.lineUnitCost(l), err=CS.error(l), std=lineStd(l), pu=DI.lineUnitPrice(l);
   const fromStd = m==='unit' && std!=null && !blank(l.cost) && Math.abs(+l.cost-std)<1e-9;
-  const t=r.querySelector('[data-o=total]'), u=r.querySelector('[data-o=unit]'), tl=r.querySelector('[data-o=tl]');
+  const t=r.querySelector('[data-o=total]'), u=r.querySelector('[data-o=unit]'), tl=r.querySelector('[data-o=tl]'), pv=r.querySelector('[data-o=punit]');
   if(t) t.textContent = cost==null?'—':fmt2(cost);
   if(tl) tl.textContent = fromStd?'Estimated total cost':'Total cost';
   if(u) u.textContent = unit==null?(num(l.qty)>0?'—':'Enter quantity'):fmtUnit(unit);
+  if(pv) pv.textContent = pu==null?(num(l.qty)>0?'—':'Enter quantity'):fmtUnit(pu);
   const typed = String(l.name||'').trim() || !blank(l.cost) || !blank(l.cost_total);
   const bad = err && (force || typed && (num(l.qty)<=0 && !blank(l.qty) || /negative/.test(err)));
   r.querySelector('[data-k=qty]').classList.toggle('err', !!bad && /quantity/i.test(err));
-  r.querySelectorAll('[data-k=cost],[data-k=cost_total],[data-k=price]').forEach(x=>x.classList.toggle('err', !!bad && /negative/.test(err) && +x.value<0));
-  r.querySelector('[data-o=note]').innerHTML = bad ? `<span class="warnline">${ic('i-alert')}${err}</span>`
-    : l._recalc ? `${ic('i-info','xs')}Total cost updated using the previous unit cost.`
-    : fromStd ? `${ic('i-info','xs')}From the product's usual cost of ${fmtUnit(std)} each. Change it if this order costs more or less.`
-    : cost===0 ? `${ic('i-info','xs')}Cost entered as zero.` : '';
+  r.querySelectorAll('[data-k=cost],[data-k=cost_total],[data-k=price],[data-k=price_total]').forEach(x=>x.classList.toggle('err', !!bad && /negative/.test(err) && +x.value<0));
+  const notes=[]; if(l._recalcPrice)notes.push(`${ic('i-info','xs')}Total selling price updated using the previous price per unit.`);
+  if(l._recalc)notes.push(`${ic('i-info','xs')}Total cost updated using the previous unit cost.`);
+  else if(fromStd)notes.push(`${ic('i-info','xs')}From the product's usual cost of ${fmtUnit(std)} each. Change it if this order costs more or less.`);
+  else if(cost===0)notes.push(`${ic('i-info','xs')}Cost entered as zero.`);
+  r.querySelector('[data-o=note]').innerHTML = bad ? `<span class="warnline">${ic('i-alert')}${err}</span>` : notes.map(n=>`<span>${n}</span>`).join('');
   const pr = cost==null?null:DI.round2(sale-cost);
   r.querySelector('[data-o=sum]').innerHTML = `<div><span>Sales</span><b class="num">${fmt2(sale)}</b></div>`
     + (cost==null ? `<div class="miss">Enter cost to calculate profit</div>`
@@ -2376,19 +2443,26 @@ function rerenderLine(i,focusKey){const old=$(`#lines .line[data-i="${i}"]`);if(
   if(focusKey){const f=n.querySelector(`[data-k=${focusKey}]`);if(f){f.focus();f.select&&f.select()}}}
 $('#lines').addEventListener('input',e=>{const r=e.target.closest('.line');if(!r)return;const i=+r.dataset.i;let l=lines[i];const k=e.target.dataset.k, v=e.target.value;
   if(k==='name') l={...l,name:v};
-  else if(k==='qty') l=CS.setQty(l, v===''?'':+v);
-  else if(k==='price') l={...l,price:v===''?'':+v};
+  else if(k==='qty') l=CS.setLineQty(l, v===''?'':+v);
+  else if(k==='price') l=DI.pricing.setUnit(l, v===''?null:+v);
+  else if(k==='price_total') l=DI.pricing.setTotal(l, v===''?null:+v);
   else if(k==='cost') l=CS.setUnit(l, v===''?null:+v);
   else if(k==='cost_total') l=CS.setTotal(l, v===''?null:+v);
   else return;
   lines[i]=l;
-  if(k==='qty'&&DI.lineMode(l)==='total'){const t=r.querySelector('[data-k=cost_total]');if(t)t.value=blank(l.cost_total)?'':l.cost_total}
+  if(k==='qty'){const t=r.querySelector('[data-k=cost_total]');if(t&&DI.lineMode(l)==='total')t.value=blank(l.cost_total)?'':l.cost_total;
+    const pt=r.querySelector('[data-k=price_total]');if(pt&&DI.linePriceMode(l)==='total')pt.value=blank(l.price_total)?'':l.price_total}
   lineRefresh(r,l); $('#h-items').classList.remove('show'); if(k==='qty')renderTiles(); calc()});
 $('#lines').addEventListener('click',e=>{const b=e.target.closest('[data-rm]');if(b){lines.splice(+b.dataset.rm,1);renderLines();draftSoon();return}
-  const md=e.target.closest('[data-mode]');if(md){const i=+md.closest('.line').dataset.i;lines[i]=CS.setMode(lines[i],md.dataset.mode);rerenderLine(i,md.classList.contains('lnk')?'cost_total':null);draftSoon()}});
+  const md=e.target.closest('[data-mode]');if(md){const i=+md.closest('.line').dataset.i;lines[i]=CS.setMode(lines[i],md.dataset.mode);rerenderLine(i,md.classList.contains('lnk')?'cost_total':null);draftSoon();return}
+  const pmd=e.target.closest('[data-prmode]');if(pmd){const i=+pmd.closest('.line').dataset.i;if(pmd.dataset.prmode===DI.linePriceMode(lines[i]))return;lines[i]=DI.pricing.setMode(lines[i],pmd.dataset.prmode);rerenderLine(i,null);draftSoon()}});
 function addLine(l,focus=true){lines.push(l);$('#legacy').style.display='none';$('#h-items').classList.remove('show');renderLines();draftSoon();if(!focus)return;const r=$$('.line').pop();const f=r.querySelector(l.name?'[data-k=qty]':'[data-k=name]');f.focus({preventScroll:!l.name?false:true});if(l.name)f.select()}
-function bumpLine(i,d){const l=lines[i];if(num(l.qty)+d<1){lines.splice(i,1)}else lines[i]=CS.setQty(l,num(l.qty)+d);renderLines();draftSoon()}
-function addProduct(id){const p=products.find(x=>x.id===id);if(!p)return;const ex=lines.findIndex(x=>x.product_id===id);if(ex>=0){bumpLine(ex,1);return}const u=CS.productUnitCost(p);addLine({product_id:p.id,name:p.name,qty:1,price:num(p.price),cost:u==null?'':u},false)}
+function bumpLine(i,d){const l=lines[i];if(num(l.qty)+d<1){lines.splice(i,1)}else lines[i]=CS.setLineQty(l,num(l.qty)+d);renderLines();draftSoon()}
+function addProduct(id){const p=products.find(x=>x.id===id);if(!p)return;const ex=lines.findIndex(x=>x.product_id===id);if(ex>=0){bumpLine(ex,1);return}const u=CS.productUnitCost(p);
+  const bulk=!blank(p.price_batch_total)&&+p.price_batch_qty>0, q=bulk?+p.price_batch_qty:1;
+  let l={product_id:p.id,name:p.name,qty:q,price:CS.productUnitPrice(p)??0,cost:u==null?'':u};
+  if(bulk){l.price_mode='total';l.price_total=DI.round2(p.price_batch_total);l.price=l.price_total/q}
+  addLine(l,false)}
 $('#ptiles').addEventListener('click',e=>{
   const inc=e.target.closest('[data-inc]'); if(inc){const i=lines.findIndex(x=>x.product_id===inc.dataset.inc);if(i>=0)bumpLine(i,1);return}
   const dec=e.target.closest('[data-dec]'); if(dec){const i=lines.findIndex(x=>x.product_id===dec.dataset.dec);if(i>=0)bumpLine(i,-1);return}
@@ -2396,8 +2470,10 @@ $('#ptiles').addEventListener('click',e=>{
   const t=e.target.closest('[data-tile]'); if(t)addProduct(t.dataset.tile);
 });
 $('#ptiles').addEventListener('keydown',e=>{const t=e.target.closest('[data-tile]');if(t&&(e.key==='Enter'||e.key===' ')){e.preventDefault();addProduct(t.dataset.tile)}});
-/* Saved shape: per-unit lines keep the original {name, qty, price, cost}; total/batch lines add cost_mode and the exact cost_total. */
+/* Saved shape: per-unit lines keep the original {name, qty, price, cost}; total/batch lines add cost_mode and the exact cost_total,
+   and total/bulk prices add price_mode and the exact price_total (price then holds the unit price at full precision). */
 function cleanLines(){return lines.map(l=>{const o={...(l.product_id?{product_id:l.product_id}:{}),name:String(l.name||'').trim(),qty:num(l.qty),price:num(l.price)};
+  if(DI.linePriceMode(l)==='total'){o.price_mode='total';o.price_total=blank(l.price_total)?0:DI.round2(l.price_total);o.price=o.qty>0?o.price_total/o.qty:0}
   if(DI.lineMode(l)==='total'){o.cost_mode='total';o.cost_total=blank(l.cost_total)?null:DI.round2(l.cost_total);o.cost=o.cost_total==null||!(o.qty>0)?null:o.cost_total/o.qty}
   else o.cost=blank(l.cost)?null:+l.cost;
   return o}).filter(l=>l.name&&l.qty>0)}
@@ -2457,6 +2533,7 @@ $('#form').onsubmit=async e=>{
     o.line_items=cl; { const g=calcCost(cl).cost; o.cost = g==null ? null : Math.round((g+num(o.delivery_cost))*100)/100; } o.customer_id=form.customerId||null;
     if(cl.length){const s=DI.linesSummary(cl);o.items=cl.map(l=>`${num(l.qty)} × ${l.name}`).join(', ');o.quantity=s.qty;o.sale_price=s.sale}
     if(o.status!=='delivered') o.delivered_on=null; else if(!o.delivered_on) o.delivered_on=today();
+    if(form.id){const cur0=orders.find(x=>x.id===form.id); if(cur0) Object.assign(o,cancelFields(cur0,o.status));} else if(o.status==='cancelled') Object.assign(o,cancelFields({status:'new'},'cancelled'));
     let r;
     if(!form.id){ r=await DB.insert('orders',{id:form.newId,...o}); }
     else {
@@ -2490,7 +2567,7 @@ $('#form').onsubmit=async e=>{
 };
 $('#delete').onclick=async()=>{
   if(!form||!form.id)return; const o=orders.find(x=>x.id===form.id); if(!o)return;
-  if((payBy[o.id]||[]).length){await dlg({title:"Can't remove this order",text:'It has payments recorded. Cancel the order instead (set the stage to Cancelled), and record a refund if money was returned.',buttons:[{label:'OK',value:true,cls:'primary'}]});return}
+  if((payBy[o.id]||[]).length){await dlg({title:"Can't remove this order",text:'It has payments recorded. Cancel the order instead (Cancel order, at the bottom of the order). Nothing is deleted and its sales and cost stop counting.',buttons:[{label:'OK',value:true,cls:'primary'}]});return}
   if(!await confirmDlg('Remove this order?','It disappears from lists and reports. The record is kept in the change log.','Remove'))return;
   const r=await DB.update('orders',o.id,{deleted_at:new Date().toISOString()},null);
   if(r.error){toast(r.error,'err');return}
@@ -2606,35 +2683,49 @@ function renderCustSheet(){
 function renderProducts(){
   const ps=[...products].sort((a,b)=>a.name.localeCompare(b.name));
   $('#plist').innerHTML = ps.length? ps.map(p=>`<button class="pcard" data-prod="${esc(p.id)}"><span class="em">${ic(pIcon(p.name))}</span>
-      <div class="pn"><b>${esc(p.name)}</b><span>${prodCostText(p)}</span></div><span class="pp num">${fmt2(p.price)}</span>
-      ${(()=>{const u=CS.productUnitCost(p);return num(p.price)&&u!=null?`<span class="pm">${Math.round((num(p.price)-u)/num(p.price)*100)}%</span>`:''})()}</button>`).join('')
+      <div class="pn"><b>${esc(p.name)}</b><span>${prodCostText(p)}</span></div><span class="pp num">${prodPriceText(p,fmt2)}</span>
+      ${(()=>{const u=CS.productUnitCost(p),pu=num(CS.productUnitPrice(p));return pu&&u!=null?`<span class="pm">${Math.round((pu-u)/pu*100)}%</span>`:''})()}</button>`).join('')
     : emptyState('i-tag','No products yet','Save the pieces you sell with their usual price and cost. Adding them to an order then takes one tap.',null,true);
   renderTiles();
 }
+function prodBulk(p){return !blank(p.price_batch_total)&&+p.price_batch_qty>0}
+function prodPriceText(p,f){return prodBulk(p)?`${num(p.price_batch_qty).toLocaleString('en-PK')} for ${f(p.price_batch_total)}`:f(p.price)}
 function prodCostText(p){const u=CS.productUnitCost(p);if(u==null)return 'Cost not set';
   return `Cost ${fmtUnit(u)} per unit`+(!blank(p.cost_batch_total)&&+p.cost_batch_qty>0?` · ${num(p.cost_batch_qty).toLocaleString('en-PK')} for ${fmt2(p.cost_batch_total)}`:'')}
-let pMode='unit';
+let pMode='unit', prMode='unit';
+function setPrMode(m){prMode=m;$$('#p-prmode [data-prm]').forEach(b=>{b.classList.toggle('on',b.dataset.prm===m);b.setAttribute('aria-checked',b.dataset.prm===m)});
+  $('#p-punit-f').hidden=m!=='unit';$('#p-pbulk-f').hidden=m!=='total';$('#p-pcalc').hidden=m!=='total';pCalc()}
+$('#p-prmode').onclick=e=>{const b=e.target.closest('[data-prm]');if(!b||b.dataset.prm===prMode)return;
+  if(b.dataset.prm==='total'){const u=$('#p-price').value;if(u!==''&&$('#p-pbtotal').value===''){$('#p-pbqty').value=$('#p-pbqty').value||1;$('#p-pbtotal').value=DI.round2(+u*+$('#p-pbqty').value)}}
+  else{const q=$('#p-pbqty').value,t=$('#p-pbtotal').value;if(t!==''&&+q>0)$('#p-price').value=+(DI.round2(+t)/+q).toFixed(4)}
+  setPrMode(b.dataset.prm)};
 function setPMode(m){pMode=m;$$('#p-mode [data-pmode]').forEach(b=>{b.classList.toggle('on',b.dataset.pmode===m);b.setAttribute('aria-checked',b.dataset.pmode===m)});
   $('#p-unit-f').hidden=m!=='unit';$('#p-batch-f').hidden=m!=='total';$('#p-calc').hidden=m!=='total';pCalc()}
 function pCalc(){const q=$('#p-bqty').value, t=$('#p-btotal').value, h=$('#h-pcost');let err='';
-  [$('#p-cost'),$('#p-bqty'),$('#p-btotal'),$('#p-price')].forEach(x=>x.classList.remove('err'));
-  if(+$('#p-price').value<0){err="Price can't be negative";$('#p-price').classList.add('err')}
-  if(pMode==='unit'){if(+$('#p-cost').value<0){err="Cost can't be negative";$('#p-cost').classList.add('err')}}
-  else{if(+t<0){err="Cost can't be negative";$('#p-btotal').classList.add('err')}
-    else if(t!==''&&!(+q>0)){err='Enter a batch quantity of at least 1';$('#p-bqty').classList.add('err')}
+  [$('#p-cost'),$('#p-bqty'),$('#p-btotal'),$('#p-price'),$('#p-pbqty'),$('#p-pbtotal')].forEach(x=>x.classList.remove('err'));
+  const pq=$('#p-pbqty').value, pt=$('#p-pbtotal').value;
+  if(prMode==='unit'){if(+$('#p-price').value<0){err="Price can't be negative";$('#p-price').classList.add('err')}}
+  else{if(+pt<0){err="Price can't be negative";$('#p-pbtotal').classList.add('err')}
+    else if(pt!==''&&!(+pq>0)){err='Enter a bulk quantity of at least 1';$('#p-pbqty').classList.add('err')}
+    $('#p-pcalc-v').textContent= pt!==''&&+pq>0&&+pt>=0 ? fmtUnit(DI.round2(+pt)/+pq) : '—'}
+  if(pMode==='unit'){if(+$('#p-cost').value<0){err=err||"Cost can't be negative";$('#p-cost').classList.add('err')}}
+  else{if(+t<0){err=err||"Cost can't be negative";$('#p-btotal').classList.add('err')}
+    else if(t!==''&&!(+q>0)){err=err||'Enter a batch quantity of at least 1';$('#p-bqty').classList.add('err')}
     $('#p-calc-v').textContent= t!==''&&+q>0&&+t>=0 ? fmtUnit(DI.round2(+t)/+q) : '—'}
   h.textContent=err;h.classList.toggle('show',!!err);
-  $('#p-note').textContent = pMode==='total'&&!prodBatch&&isCloud() ? 'For now only the unit cost is kept. Batch figures will be saved after the next database update.' : 'Orders already saved keep their own cost.';
+  const lost=[prMode==='total'?'price':'',pMode==='total'?'cost':''].filter(Boolean);
+  $('#p-note').textContent = lost.length&&!prodBatch&&isCloud() ? `For now only the unit ${lost.join(' and ')} ${lost.length>1?'are':'is'} kept. Bulk and batch figures will be saved after the next database update.` : 'Orders already saved keep their own price and cost.';
   return err}
 $('#p-mode').onclick=e=>{const b=e.target.closest('[data-pmode]');if(!b||b.dataset.pmode===pMode)return;
   if(b.dataset.pmode==='total'){const u=$('#p-cost').value;if(u!==''&&$('#p-btotal').value===''){$('#p-bqty').value=$('#p-bqty').value||1;$('#p-btotal').value=DI.round2(+u*+$('#p-bqty').value)}}
   else{const q=$('#p-bqty').value,t=$('#p-btotal').value;if(t!==''&&+q>0)$('#p-cost').value=+(DI.round2(+t)/+q).toFixed(4)}
   setPMode(b.dataset.pmode)};
-['p-cost','p-bqty','p-btotal','p-price'].forEach(id=>$('#'+id).addEventListener('input',pCalc));
+['p-cost','p-bqty','p-btotal','p-price','p-pbqty','p-pbtotal'].forEach(id=>$('#'+id).addEventListener('input',pCalc));
 function openProduct(p){
-  $('#p-id').value=p?p.id:''; $('#p-name').value=p?p.name:''; $('#p-price').value=p?p.price:''; $('#p-cost').value=p&&!blank(p.cost)?+(+p.cost).toFixed(4):'';
+  $('#p-id').value=p?p.id:''; $('#p-name').value=p?p.name:''; $('#p-price').value=p&&!blank(p.price)?+(+p.price).toFixed(4):'';
+  const bulk=p&&prodBulk(p); $('#p-pbqty').value=bulk?p.price_batch_qty:''; $('#p-pbtotal').value=bulk?p.price_batch_total:''; prMode=bulk?'total':'unit'; $('#p-cost').value=p&&!blank(p.cost)?+(+p.cost).toFixed(4):'';
   const batch=p&&!blank(p.cost_batch_total)&&+p.cost_batch_qty>0;
-  $('#p-bqty').value=batch?p.cost_batch_qty:''; $('#p-btotal').value=batch?p.cost_batch_total:''; setPMode(batch?'total':'unit');
+  $('#p-bqty').value=batch?p.cost_batch_qty:''; $('#p-btotal').value=batch?p.cost_batch_total:''; setPMode(batch?'total':'unit'); setPrMode(prMode);
   $('#p-title').textContent=p?'Edit product':'New product'; $('#p-delete').style.display=p?'':'none'; $('#p-name').classList.remove('err');$('#h-pname').classList.remove('show');
   openSheetEl('#psheet','#p-name');
 }
@@ -2648,7 +2739,10 @@ $('#pform').onsubmit=async e=>{
   let cost=null,bq=null,bt=null;
   if(pMode==='total'){bt=$('#p-btotal').value===''?null:DI.round2(num($('#p-btotal').value));bq=bt==null?null:num($('#p-bqty').value);cost=bt==null?null:bt/bq}
   else { const v=$('#p-cost').value; cost=v===''?null:(old.id&&!blank(old.cost)&&+(+old.cost).toFixed(4)===+v?+old.cost:num(v)) }  // an untouched 3.3333 keeps its full precision
-  const p={id,created_at:old.created_at||new Date().toISOString(),name:$('#p-name').value.trim(),price:num($('#p-price').value),cost,cost_batch_qty:bq,cost_batch_total:bt};
+  let price=0,pbq=null,pbt=null;
+  if(prMode==='total'){pbt=$('#p-pbtotal').value===''?null:DI.round2(num($('#p-pbtotal').value));pbq=pbt==null?null:num($('#p-pbqty').value);price=pbt==null?0:pbt/pbq}
+  else { const v=$('#p-price').value; price=v===''?0:(old.id&&!blank(old.price)&&+(+old.price).toFixed(4)===+v?+old.price:num(v)) }
+  const p={id,created_at:old.created_at||new Date().toISOString(),name:$('#p-name').value.trim(),price,cost,cost_batch_qty:bq,cost_batch_total:bt,price_batch_qty:pbq,price_batch_total:pbt};
   setSaving($('#p-save'),true);const r=await DB.upsertProduct(p);setSaving($('#p-save'),false);
   if(r.error){toast(r.error,'err');return}
   toast(old.id?'Product updated':'Product saved');closeSheetEl('#psheet');renderProducts();
@@ -2722,8 +2816,8 @@ function csvCell(v){let s=v==null?'':String(v);if(typeof v==='string'&&/^[=+\-@\
 function download(name,rows){const csv=rows.map(r=>r.map(csvCell).join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv'}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
 function exportCSV(kind){
   const d=today();
-  if(kind==='orders') download(`decorify-orders-${d}.csv`,[['order_id','order_date','customer','phone','source','address','items','quantity','order_total','delivery_cost','direct_cost','order_profit','received','balance','payment_status','stage','planned_delivery','delivered_on','notes','pieces'],
-    ...orders.map(o=>{const m=money(o);return [o.id,o.order_date,o.customer_name,o.phone,o.source,o.address,o.items,o.quantity,num(o.sale_price),num(o.delivery_cost),costKnown(o)?num(o.cost):'',profitOf(o)??'',m.net,m.balance,DI.PAY_LABEL[m.status],LABEL[o.status],o.delivery_date,o.delivered_on,o.notes,getLines(o).map(l=>`${num(l.qty)} x ${l.name} @ ${num(l.price)}${blank(l.cost)?'':' (cost '+num(l.cost)+')'}`).join('; ')]})]);
+  if(kind==='orders') download(`decorify-orders-${d}.csv`,[['order_id','order_date','customer','phone','source','address','items','quantity','order_total','delivery_cost','direct_cost','order_profit','received','balance','payment_status','stage','planned_delivery','delivered_on','notes','pieces','cancelled_on','cancel_reason','kept_on_cancel'],
+    ...orders.map(o=>{const m=money(o);return [o.id,o.order_date,o.customer_name,o.phone,o.source,o.address,o.items,o.quantity,num(o.sale_price),num(o.delivery_cost),costKnown(o)?num(o.cost):'',profitOf(o)??'',m.net,m.balance,DI.PAY_LABEL[m.status],LABEL[o.status],o.delivery_date,o.delivered_on,o.notes,getLines(o).map(l=>`${num(l.qty)} x ${l.name} @ ${num(l.price)}${blank(l.cost)?'':' (cost '+num(l.cost)+')'}`).join('; '),o.cancelled_on||'',o.cancel_reason||'',o.cancel_kept??'']})]);
   else if(kind==='payments') download(`decorify-payments-${d}.csv`,[['payment_id','order_id','customer','type','amount','date','method','reference','note','voided','void_reason'],
     ...payments.map(p=>{const o=orders.find(x=>x.id===p.order_id);return [p.id,p.order_id,o?.customer_name||'',p.kind,num(p.amount),p.paid_on,p.method,p.reference,p.note,p.voided_at?'yes':'',p.void_reason]})]);
   else if(kind==='expenses') download(`decorify-expenses-${d}.csv`,[['date','type','group','description','amount','paid_by','voided','void_reason'],
@@ -2979,7 +3073,7 @@ function insOwed(r){
 }
 function insPnl(r){
   const P=r.pnl; if(!P) return '';
-  const nothing=!P.deliveredOrders&&!P.expenseEntries;
+  const nothing=!P.deliveredOrders&&!P.expenseEntries&&!P.cancelKeptOrders;
   if(nothing) return `<div class="ins-sec"><div class="sec-h"><h2>Profit &amp; loss</h2><span class="lbl">Delivered orders · ${longDate(P.from)} – ${longDate(P.to)}</span></div>${emptyState('i-receipt','Nothing delivered or spent in these dates','Once orders are delivered and expenses recorded, a simple profit & loss appears here.')}</div>`;
   const op = P.operatingProfit;
   return `<div class="ins-sec"><div class="sec-h"><h2>Profit &amp; loss</h2><span class="lbl">Delivered orders · ${longDate(P.from)} – ${longDate(P.to)}</span></div>
@@ -2988,6 +3082,7 @@ function insPnl(r){
       ${kv('Less: direct costs of those orders',P.costComplete?'− '+txt(P.directCost):`<span style="color:var(--warning)">${plural(P.missingCostOrders,'order')} without cost</span>`,'num')}
       ${P.deliveryCost?`<div class="kvr sub"><span>of which delivery</span><b class="num">${txt(P.deliveryCost)}</b></div>`:''}
       <div class="kvr mid"><span>Order profit</span><b class="num">${P.orderProfit==null?'Not available':txt(P.orderProfit)}</b></div>
+      ${P.cancelKept?kv(`Kept from cancelled orders<br><small style="color:var(--text-muted)">${plural(P.cancelKeptOrders,'order')}</small>`,txt(P.cancelKept),'num'):''}
       ${kv('Less: business expenses','− '+txt(P.operatingExpenses),'num')}
       ${P.expenseLines.map(x=>`<div class="kvr sub"><span>${esc(x.label)}</span><b class="num">${txt(x.amount)}</b></div>`).join('')}
       <div class="kvr tot"><span>Operating profit</span><b class="num ${op!=null&&op<0?'neg':''}" style="${op!=null&&op<0?'color:var(--danger)':''}">${op==null?'—':txt(op)}</b></div>

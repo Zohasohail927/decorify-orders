@@ -2,7 +2,8 @@
  * Pure functions, read-only. Used by the app (Home, Orders, Insights, Customers) and by the tests in tests/.
  *
  * DEFINITIONS
- *  - Order total (net sales) = sale_price. A cancelled order's total counts as 0.
+ *  - Order total (net sales) = sale_price. A cancelled order's sales and cost count as 0. Money kept on a
+ *    cancelled order (cancel_kept) is that order's only charge, and shows in the P&L on cancelled_on.
  *  - Direct cost = cost recorded on the order (materials + the order's delivery cost, delivery_cost). A blank cost (null) means "not entered yet" and is never treated as 0.
  *    0 means the cost was entered as zero. An order made of pieces has a cost only when EVERY piece has one.
  *  - Order profit = net sales - direct cost, before business expenses. Shown only when all costs in the group are entered;
@@ -50,54 +51,71 @@
   /* ---------------- costs ---------------- */
   function lines(o) { return Array.isArray(o && o.line_items) ? o.line_items : []; }
   function costRecorded(o) { return !blank(o && o.cost); }
-  /* ---- piece costing: "per unit" or "total / batch" ----
-   * A line keeps   cost       = cost of ONE unit (full precision, never rounded)
-   *                cost_mode  = 'unit' (default, also for older lines) or 'total'
-   *                cost_total = the exact total entered, in rupees to the paisa (total mode only)
-   * The cost of a line is the entered total in total mode; in unit mode it is qty × unit cost,
+  /* ---- piece costing and pricing: "per unit" or "total / batch" ----
+   * The same rules are used for a piece's COST and its SELLING PRICE.
+   * A line keeps   cost  / price              = the amount for ONE unit (full precision, never rounded)
+   *                cost_mode / price_mode     = 'unit' (default, also for older lines) or 'total'
+   *                cost_total / price_total   = the exact total entered, in rupees to the paisa (total mode only)
+   * The line amount is the entered total in total mode; in unit mode it is qty × unit amount,
    * multiplied BEFORE rounding to paisa, so 3 × (10 ÷ 3) is Rs 10.00 and never Rs 9.99.
-   * Blank means "not entered" and is never treated as 0. */
+   * A blank cost means "not entered" and is never treated as 0. A blank price counts as 0 in sales. */
   function round2(v) { return Math.round(+(+v * 100).toFixed(4)) / 100; }
   function lineQty(l) { var q = +(l && l.qty); return isFinite(q) ? q : 0; }
-  function lineMode(l) { return l && l.cost_mode === 'total' ? 'total' : 'unit'; }
-  function lineCostP(l) {
-    if (!l) return null;
-    if (lineMode(l) === 'total') return blank(l.cost_total) ? null : toP(l.cost_total);
-    if (blank(l.cost)) return null;
-    return Math.round(+(lineQty(l) * +l.cost * 100).toFixed(4));
+  function method(K) { // K = { v: 'cost', m: 'cost_mode', t: 'cost_total', r: '_recalc' }
+    function mode(l) { return l && l[K.m] === 'total' ? 'total' : 'unit'; }
+    function amountP(l) {
+      if (!l) return null;
+      if (mode(l) === 'total') return blank(l[K.t]) ? null : toP(l[K.t]);
+      if (blank(l[K.v])) return null;
+      return Math.round(+(lineQty(l) * +l[K.v] * 100).toFixed(4));
+    }
+    function amount(l) { var p = amountP(l); return p == null ? null : fromP(p); }
+    function unit(l) {
+      if (mode(l) === 'total') { var q = lineQty(l); return blank(l[K.t]) || !(q > 0) ? null : +l[K.t] / q; }
+      return blank(l[K.v]) ? null : +l[K.v];
+    }
+    function drop(n) { delete n[K.r]; return n; }
+    return {
+      mode: mode, amountP: amountP, amount: amount, unit: unit,
+      /* Quantity changed: keep the unit amount; in total mode the total is worked out again from it. */
+      setQty: function (l, q) {
+        var n = Object.assign({}, l, { qty: q }), u = blank(l[K.v]) ? null : +l[K.v];
+        if (mode(l) === 'total' && u != null && +q > 0) { n[K.t] = round2(+q * u); n[K.r] = true; }
+        return n;
+      },
+      /* Unit amount typed (per-unit mode). */
+      setUnit: function (l, v) { var n = Object.assign({}, l); n[K.m] = 'unit'; n[K.v] = blank(v) ? null : +v; delete n[K.t]; return drop(n); },
+      /* Total typed (total mode): the unit amount is worked out from the current quantity. */
+      setTotal: function (l, v) {
+        var n = drop(Object.assign({}, l)); n[K.m] = 'total';
+        if (blank(v)) { n[K.t] = null; n[K.v] = null; return n; }
+        n[K.t] = round2(v); var q = lineQty(l);
+        n[K.v] = q > 0 ? n[K.t] / q : (blank(l[K.v]) ? null : +l[K.v]);
+        return n;
+      },
+      /* Switching method never changes the line amount. */
+      setMode: function (l, m) {
+        var n = drop(Object.assign({}, l));
+        if (m === mode(l)) return n;
+        if (m === 'total') { n[K.m] = 'total'; n[K.t] = amount(l); }
+        else { n[K.m] = 'unit'; n[K.v] = unit(l); delete n[K.t]; }
+        return n;
+      }
+    };
   }
-  function lineCost(l) { var p = lineCostP(l); return p == null ? null : fromP(p); }
-  function lineUnitCost(l) {
-    if (lineMode(l) === 'total') { var q = lineQty(l); return blank(l.cost_total) || !(q > 0) ? null : +l.cost_total / q; }
-    return blank(l.cost) ? null : +l.cost;
-  }
-  function lineSaleP(l) { return Math.round(lineQty(l) * toP(l.price)); }
+  var COST = method({ v: 'cost', m: 'cost_mode', t: 'cost_total', r: '_recalc' });
+  var PRICE = method({ v: 'price', m: 'price_mode', t: 'price_total', r: '_recalcPrice' });
+  function lineMode(l) { return COST.mode(l); }
+  function lineCostP(l) { return COST.amountP(l); }
+  function lineCost(l) { return COST.amount(l); }
+  function lineUnitCost(l) { return COST.unit(l); }
+  function linePriceMode(l) { return PRICE.mode(l); }
+  function lineSaleP(l) { var p = PRICE.amountP(l); return p == null ? 0 : p; }
+  function lineSale(l) { return fromP(lineSaleP(l)); }
+  function lineUnitPrice(l) { return PRICE.unit(l); }
   /* State changes used by the order form. Each returns a NEW line object. */
   var costing = {
-    /* Quantity changed: keep the unit cost; in total mode the total is worked out again from it. */
-    setQty: function (l, q) {
-      var n = Object.assign({}, l, { qty: q }), u = blank(l.cost) ? null : +l.cost;
-      if (lineMode(l) === 'total' && u != null && +q > 0) { n.cost_total = round2(+q * u); n._recalc = true; }
-      return n;
-    },
-    /* Unit cost typed (per-unit mode). */
-    setUnit: function (l, v) { var n = Object.assign({}, l, { cost_mode: 'unit', cost: blank(v) ? null : +v }); delete n.cost_total; delete n._recalc; return n; },
-    /* Total cost typed (total mode): the unit cost is worked out from the current quantity. */
-    setTotal: function (l, v) {
-      var n = Object.assign({}, l, { cost_mode: 'total' }); delete n._recalc;
-      if (blank(v)) { n.cost_total = null; n.cost = null; return n; }
-      n.cost_total = round2(v); var q = lineQty(l);
-      n.cost = q > 0 ? n.cost_total / q : (blank(l.cost) ? null : +l.cost);
-      return n;
-    },
-    /* Switching method never changes what the line costs. */
-    setMode: function (l, m) {
-      var n = Object.assign({}, l); delete n._recalc;
-      if (m === lineMode(l)) return n;
-      if (m === 'total') { n.cost_mode = 'total'; n.cost_total = lineCost(l); }
-      else { n.cost_mode = 'unit'; n.cost = lineUnitCost(l); delete n.cost_total; }
-      return n;
-    },
+    setQty: COST.setQty, setUnit: COST.setUnit, setTotal: COST.setTotal, setMode: COST.setMode,
     /* Problems that must stop a save. */
     error: function (l) {
       var q = +(l && l.qty);
@@ -105,6 +123,7 @@
       if (!blank(l.cost) && +l.cost < 0) return "Cost can't be negative";
       if (!blank(l.cost_total) && +l.cost_total < 0) return "Cost can't be negative";
       if (!blank(l.price) && +l.price < 0) return "Price can't be negative";
+      if (!blank(l.price_total) && +l.price_total < 0) return "Price can't be negative";
       return null;
     },
     /* A saved product's usual unit cost (from its batch if one was entered). */
@@ -112,8 +131,17 @@
       if (!p) return null;
       if (!blank(p.cost_batch_total) && +p.cost_batch_qty > 0) return +p.cost_batch_total / +p.cost_batch_qty;
       return blank(p.cost) ? null : +p.cost;
-    }
+    },
+    /* A saved product's usual selling price per unit (from its bulk price if one was entered). */
+    productUnitPrice: function (p) {
+      if (!p) return null;
+      if (!blank(p.price_batch_total) && +p.price_batch_qty > 0) return +p.price_batch_total / +p.price_batch_qty;
+      return blank(p.price) ? null : +p.price;
+    },
+    /* Quantity changed: cost AND price follow their own method. */
+    setLineQty: function (l, q) { return PRICE.setQty(COST.setQty(l, q), q); }
   };
+  var pricing = { setQty: PRICE.setQty, setUnit: PRICE.setUnit, setTotal: PRICE.setTotal, setMode: PRICE.setMode };
   /* Totals for a list of pieces: cost is null unless every piece has a cost. */
   function linesSummary(ls) {
     var saleP = 0, costP = 0, qty = 0, known = 0, missing = 0;
@@ -130,9 +158,11 @@
   function groupPayments(pays) {
     var m = {}; livePayments(pays).forEach(function (p) { (m[p.order_id] || (m[p.order_id] = [])).push(p); }); return m;
   }
+  /* A cancelled order's total is only the money Decorify kept as a cancellation charge (usually 0). */
+  function keptP(o) { return o && o.status === 'cancelled' && o.cancel_kept != null && isFinite(+o.cancel_kept) ? Math.max(0, toP(o.cancel_kept)) : 0; }
   /* Money position of one order. pays = that order's payments (voided ones are ignored). */
   function moneyOf(o, pays) {
-    var totalP = o && o.status !== 'cancelled' ? toP(o.sale_price) : 0, inP = 0, outP = 0;
+    var totalP = !o ? 0 : o.status !== 'cancelled' ? toP(o.sale_price) : keptP(o), inP = 0, outP = 0;
     livePayments(pays).forEach(function (p) { if (p.kind === 'refund') outP += toP(p.amount); else inP += toP(p.amount); });
     var netP = inP - outP, balP = totalP - netP;
     var status = balP < 0 ? 'credit' : balP === 0 ? (totalP === 0 && netP === 0 ? 'none' : 'paid') : netP > 0 ? 'partly' : 'unpaid';
@@ -267,6 +297,12 @@
       var a = toP(e.amount), kind = EXPENSE_KIND[e.category] || 'operating'; count++;
       if (kind === 'stock') stockP += a; else if (kind === 'drawings') drawP += a; else { opP += a; cats[e.category] = (cats[e.category] || 0) + a; }
     });
+    var keptTotP = 0, keptN = 0;
+    (allOrders || []).forEach(function (o) {
+      if (!o || o.deleted_at || o.status !== 'cancelled') return; var k = keptP(o); if (!k) return;
+      var d = isDay(o.cancelled_on) ? String(o.cancelled_on).slice(0, 10) : null; if (!d || d < from || d > to) return;
+      keptTotP += k; keptN++;
+    });
     var orderProfit = agg.profit;
     return {
       from: from, to: to, deliveredOrders: agg.orders, sales: agg.sales,
@@ -274,7 +310,8 @@
       orderProfit: orderProfit, subset: agg.completeSubset,
       operatingExpenses: fromP(opP),
       expenseLines: Object.keys(cats).map(function (k) { return { category: k, label: EXPENSE_LABEL[k] || k, amount: fromP(cats[k]) }; }).sort(function (a, b) { return b.amount - a.amount; }),
-      operatingProfit: orderProfit == null ? null : fromP(toP(orderProfit) - opP),
+      cancelKept: fromP(keptTotP), cancelKeptOrders: keptN,
+      operatingProfit: orderProfit == null ? null : fromP(toP(orderProfit) + keptTotP - opP),
       stockPurchases: fromP(stockP), ownerDrawings: fromP(drawP), expenseEntries: count,
       deliveredWithoutDate: undated
     };
@@ -376,7 +413,7 @@
         var key = l.product_id ? 'id:' + l.product_id : 'name:' + name.toLowerCase();
         var p = prod[key] || (prod[key] = { key: key, productId: l.product_id || null, name: name, custom: !l.product_id, qty: 0, salesP: 0, costP: 0, costMissingLines: 0, orders: {} });
         var q = +l.qty || 0;
-        p.qty += q; p.salesP += Math.round(q * toP(l.price)); p.orders[o.id] = 1;
+        p.qty += q; p.salesP += lineSaleP(l); p.orders[o.id] = 1;
         var lc = lineCostP(l); if (lc == null) p.costMissingLines++; else p.costP += lc;
         p.name = name;
       });
@@ -437,6 +474,7 @@
   return { compute: compute, aggregate: aggregate, periodFor: periodFor, orderDay: orderDay, deliveredDay: deliveredDay,
     customerKey: customerKey, phoneKey: phoneKey, costRecorded: costRecorded, linesSummary: linesSummary, blank: blank,
     lineCost: lineCost, lineUnitCost: lineUnitCost, lineMode: lineMode, costing: costing, round2: round2,
+    pricing: pricing, linePriceMode: linePriceMode, lineSale: lineSale, lineUnitPrice: lineUnitPrice,
     moneyOf: moneyOf, groupPayments: groupPayments, receivables: receivables, pnl: pnl, PAY_LABEL: PAY_LABEL,
     EXPENSE_KIND: EXPENSE_KIND, EXPENSE_LABEL: EXPENSE_LABEL,
     monthLabel: monthLabel, monthKey: monthKey, monthEnd: monthEnd, addDays: addDays, ymd: ymd, toP: toP, fromP: fromP, names: names };
